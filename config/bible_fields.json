@@ -1,0 +1,54 @@
+{
+  "fields": [
+    {
+      "key": "trigger",
+      "label": "触发词",
+      "required": true
+    },
+    {
+      "key": "hair",
+      "label": "发型与发色",
+      "required": true
+    },
+    {
+      "key": "eyes",
+      "label": "瞳色与眼型",
+      "required": true
+    },
+    {
+      "key": "outfit",
+      "label": "服装",
+      "required": true
+    },
+    {
+      "key": "signature",
+      "label": "标志性特征",
+      "required": true
+    },
+    {
+      "key": "body",
+      "label": "体型与年龄感",
+      "required": false
+    },
+    {
+      "key": "pose",
+      "label": "姿势控制",
+      "required": false
+    },
+    {
+      "key": "personality",
+      "label": "默认表情与性格",
+      "required": false
+    },
+    {
+      "key": "extras",
+      "label": "补充标签（场景 / 光 / 风格）",
+      "required": false
+    },
+    {
+      "key": "lewd",
+      "label": "色情程度",
+      "required": false
+    }
+  ]
+}

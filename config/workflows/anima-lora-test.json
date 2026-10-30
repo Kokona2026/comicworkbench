@@ -1,0 +1,137 @@
+{
+  "__meta__": {
+    "title": "Anima Base v1 + character LoRA - test grid cell",
+    "stage": 2,
+    "requires_packs": [],
+    "notes": "Stage 2 gate: one cell per (checkpoint x seed x prompt x strength). Keep seeds fixed so cells are comparable.",
+    "defaults": {
+      "unet_name": "anima-base-v1.0.safetensors",
+      "clip_name": "qwen_3_06b_base.safetensors",
+      "vae_name": "qwen_image_vae.safetensors",
+      "lora_name": "guizhencao_v1.safetensors",
+      "strength_model": 0.6,
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1,
+      "seed": 123456789,
+      "steps": 30,
+      "cfg": 4.0,
+      "sampler_name": "er_sde",
+      "scheduler": "normal",
+      "denoise": 1.0,
+      "positive": "masterpiece, best quality, @m8style, 1girl, solo, original, silver hair, very long hair, purple flower, black ribbon, halo, white wings, purple eyes, white one-piece swimsuit, beach, full body, looking at viewer",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "filename_prefix": "anima/lora-grid"
+    }
+  },
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "{{unet_name}}",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "{{clip_name}}",
+      "type": "qwen_image",
+      "device": "default"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "{{vae_name}}"
+    }
+  },
+  "4": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "lora_name": "{{lora_name}}",
+      "strength_model": "{{strength_model}}",
+      "model": [
+        "1",
+        0
+      ]
+    }
+  },
+  "5": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {
+      "width": "{{width}}",
+      "height": "{{height}}",
+      "batch_size": "{{batch_size}}"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{{positive}}",
+      "clip": [
+        "2",
+        0
+      ]
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{{negative}}",
+      "clip": [
+        "2",
+        0
+      ]
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": "{{seed}}",
+      "steps": "{{steps}}",
+      "cfg": "{{cfg}}",
+      "sampler_name": "{{sampler_name}}",
+      "scheduler": "{{scheduler}}",
+      "denoise": "{{denoise}}",
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "10": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "9",
+        0
+      ],
+      "filename_prefix": "{{filename_prefix}}"
+    }
+  }
+}

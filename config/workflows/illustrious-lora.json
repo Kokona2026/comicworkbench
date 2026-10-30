@@ -1,0 +1,120 @@
+{
+  "__meta__": {
+    "title": "Illustrious XL（SDXL 系）+ LoRA 槽位",
+    "stage": 3,
+    "requires_packs": [],
+    "notes": "SDXL / Illustrious branch, tuned for 白洲梓 IXL LoRA @0.9: 1024x1536, dpmpp_2m karras, 30 steps, CFG 5. adult body tokens + no-gown negatives to stop the LoRA pulling her into a long frilly dress.",
+    "defaults": {
+      "ckpt_name": "Illustrious-XL-v2.0.safetensors",
+      "lora_name": "ShirasuAzusaBlueArchive_IXL_v1.safetensors",
+      "lora_strength": 0.9,
+      "width": 1024,
+      "height": 1536,
+      "batch_size": 1,
+      "seed": 970001,
+      "steps": 30,
+      "cfg": 5.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "positive": "zzAzusa, pink eyes, purple eyes, white hair, hair between eyes, long hair, yellow halo, purple flower, hair ornament, hair flower, long sleeves, white wings, low wings, angel wings, mature female, adult woman, tall, slender, long legs, white cropped jacket, black short skirt, pleated skirt, black sailor collar, yellow neckerchief, black footwear, 1girl, solo, standing, full body, looking at viewer, gentle smile, classroom, window, afternoon light, depth of field",
+      "negative": "bad quality, worst quality, worst detail, sketch, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, extra limbs, long dress, gown, ball gown, frilled dress, frills, layer skirt, child, loli, chibi, petite, ",
+      "filename_prefix": "illustrious/art"
+    }
+  },
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "{{ckpt_name}}"
+    }
+  },
+  "2": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "lora_name": "{{lora_name}}",
+      "strength_model": "{{lora_strength}}",
+      "model": [
+        "1",
+        0
+      ]
+    }
+  },
+  "3": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{{positive}}",
+      "clip": [
+        "1",
+        1
+      ]
+    }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{{negative}}",
+      "clip": [
+        "1",
+        1
+      ]
+    }
+  },
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": "{{width}}",
+      "height": "{{height}}",
+      "batch_size": "{{batch_size}}"
+    }
+  },
+  "6": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": "{{seed}}",
+      "steps": "{{steps}}",
+      "cfg": "{{cfg}}",
+      "sampler_name": "{{sampler_name}}",
+      "scheduler": "{{scheduler}}",
+      "denoise": "{{denoise}}",
+      "model": [
+        "2",
+        0
+      ],
+      "positive": [
+        "3",
+        0
+      ],
+      "negative": [
+        "4",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    }
+  },
+  "7": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "6",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
+    }
+  },
+  "8": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "7",
+        0
+      ],
+      "filename_prefix": "{{filename_prefix}}"
+    }
+  }
+}

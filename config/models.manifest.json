@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "note": "Single source of truth for weights and custom nodes. Read by scripts/02-fetch-models.ps1, scripts/05-sync-assets.ps1 and app/audit_engine.py. Sizes verified against the Hugging Face API on 2026-10-29; min_bytes = expected * 0.99 so a truncated download is rejected.",
+  "files": [
+    {
+      "name": "anima-base-v1.0.safetensors",
+      "target": "diffusion_models",
+      "expected_bytes": 4182218328,
+      "min_bytes": 4140396144,
+      "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-base-v1.0.safetensors",
+      "required_for": ["stage0"],
+      "license": "CircleStone Labs non-commercial; verify before any commercial use.",
+      "source_hint": "circlestone-labs/Anima"
+    },
+    {
+      "name": "qwen_3_06b_base.safetensors",
+      "target": "text_encoders",
+      "expected_bytes": 1192135096,
+      "min_bytes": 1180213745,
+      "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/text_encoders/qwen_3_06b_base.safetensors",
+      "required_for": ["stage0"],
+      "license": "Check the upstream Qwen3-0.6B base license.",
+      "source_hint": "circlestone-labs/Anima"
+    },
+    {
+      "name": "qwen_image_vae.safetensors",
+      "target": "vae",
+      "expected_bytes": 253806246,
+      "min_bytes": 251268184,
+      "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/vae/qwen_image_vae.safetensors",
+      "required_for": ["stage0"],
+      "license": "Check the upstream Qwen-Image VAE license.",
+      "source_hint": "circlestone-labs/Anima"
+    }
+  ],
+  "optional": [
+    {
+      "name": "anima-lllite-inpainting.safetensors",
+      "target": "controlnet",
+      "expected_bytes": 65772872,
+      "min_bytes": 65115244,
+      "url": "https://huggingface.co/kohya-ss/Anima-LLLite/resolve/main/anima-lllite-inpainting-v2.safetensors",
+      "upstream_name": "anima-lllite-inpainting-v2.safetensors",
+      "required_for": ["stage3", "stage4"],
+      "license": "Check kohya-ss/Anima-LLLite upstream terms.",
+      "source_hint": "kohya-ss/Anima-LLLite (upstream file is -v2; saved under the workflow-facing name)"
+    },
+    {
+      "name": "wan2.2-i2v-a14b-q8.gguf",
+      "target": "unet",
+      "expected_bytes": 15406608896,
+      "min_bytes": 15252542807,
+      "url": "https://huggingface.co/QuantStack/Wan2.2-I2V-A14B-GGUF/resolve/main/HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf",
+      "upstream_name": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf",
+      "required_for": ["stage5"],
+      "license": "Check the Wan 2.2 upstream license.",
+      "source_hint": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+      "vram_note": "15.4 GB does not fit a 16 GB card together with the VAE decode buffer; prefer Q5_K_M/Q6_K, or start ComfyUI with --reserve-vram and enable tiled VAE decode."
+    },
+    {
+      "name": "anima-turbo-v1.1.safetensors",
+      "target": "diffusion_models",
+      "expected_bytes": 4182230656,
+      "min_bytes": 4140408350,
+      "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-turbo-v1.1.safetensors",
+      "required_for": ["stage1", "stage4"],
+      "license": "CircleStone Labs non-commercial.",
+      "source_hint": "Faster storyboard drafts (8-12 steps, CFG 1, euler)."
+    },
+    {
+      "name": "anima-aesthetic-v1.1.safetensors",
+      "target": "diffusion_models",
+      "expected_bytes": 4182230656,
+      "min_bytes": 4140408350,
+      "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-aesthetic-v1.1.safetensors",
+      "required_for": ["stage3"],
+      "license": "CircleStone Labs non-commercial.",
+      "source_hint": "Higher-finish illustration drafts; the author advises dropping score tags."
+    }
+  ],
+  "custom_nodes": [
+    {
+      "name": "ComfyUI-Manager",
+      "url": "https://github.com/ltdrdata/ComfyUI-Manager.git",
+      "desc": "Node manager for ComfyUI"
+    },
+    {
+      "name": "ComfyUI-GGUF",
+      "url": "https://github.com/city96/ComfyUI-GGUF.git",
+      "desc": "UnetLoaderGGUF for the Wan 2.2 stage-5 workflow"
+    },
+    {
+      "name": "ComfyUI-VideoHelperSuite",
+      "url": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git",
+      "desc": "VHS_VideoCombine for the stage-5 workflow"
+    },
+    {
+      "name": "ComfyUI-KJNodes",
+      "url": "https://github.com/kijai/ComfyUI-KJNodes.git",
+      "desc": "Mask, image and quality-of-life nodes"
+    },
+    {
+      "name": "ComfyUI-Impact-Pack",
+      "url": "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
+      "desc": "FaceDetailer for stage 3/4 fixes"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "__meta__": {
+    "title": "Anima Base v1 - text to image",
+    "stage": 0,
+    "requires_packs": [],
+    "notes": "Stage 0 acceptance: 1024x1024 must render without errors. Node names are validated against the live /object_info by scripts/20-verify-workflow.ps1.",
+    "defaults": {
+      "unet_name": "anima-base-v1.0.safetensors",
+      "clip_name": "qwen_3_06b_base.safetensors",
+      "vae_name": "qwen_image_vae.safetensors",
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1,
+      "seed": 123456789,
+      "steps": 40,
+      "cfg": 4.5,
+      "sampler_name": "er_sde",
+      "scheduler": "normal",
+      "denoise": 1.0,
+      "positive": "masterpiece, best quality, score_7, safe, 1girl, solo, original, long hair, blue hair, blue eyes, school uniform, full body, standing, looking at viewer, simple background, white background",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "filename_prefix": "anima/txt2img"
+    }
+  },
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": { "unet_name": "{{unet_name}}", "weight_dtype": "default" }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": { "clip_name": "{{clip_name}}", "type": "qwen_image", "device": "default" }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "{{vae_name}}" }
+  },
+  "4": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": { "width": "{{width}}", "height": "{{height}}", "batch_size": "{{batch_size}}" }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{positive}}", "clip": ["2", 0] }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{negative}}", "clip": ["2", 0] }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": "{{seed}}",
+      "steps": "{{steps}}",
+      "cfg": "{{cfg}}",
+      "sampler_name": "{{sampler_name}}",
+      "scheduler": "{{scheduler}}",
+      "denoise": "{{denoise}}",
+      "model": ["1", 0],
+      "positive": ["5", 0],
+      "negative": ["6", 0],
+      "latent_image": ["4", 0]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["7", 0], "vae": ["3", 0] }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["8", 0], "filename_prefix": "{{filename_prefix}}" }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "__meta__": {
+    "title": "Anima + 5 风格 LoRA 链（カントク / てぃんくる / 魔太郎 / 鬼针草 / 白玉）",
+    "stage": 3,
+    "requires_packs": [],
+    "notes": "Five LoraLoaderModelOnly chained: each node takes model from the previous one, the last feeds KSampler. Placeholders s1..s5 are the per-style weights; presets live in gen_5lora.py.",
+    "defaults": {
+      "unet_name": "anima-base-v1.0.safetensors",
+      "clip_name": "qwen_3_06b_base.safetensors",
+      "vae_name": "qwen_image_vae.safetensors",
+      "lora1": "kantoku_anima.safetensors",
+      "s1": 0.4,
+      "lora2": "tinkle_anima.safetensors",
+      "s2": 0.4,
+      "lora3": "matarou_anima.safetensors",
+      "s3": 0.3,
+      "lora4": "guizhencao_v1.safetensors",
+      "s4": 0.35,
+      "lora5": "shiratama_anima.safetensors",
+      "s5": 0.35,
+      "width": 1024,
+      "height": 1536,
+      "batch_size": 1,
+      "seed": 424242,
+      "steps": 36,
+      "cfg": 4.5,
+      "sampler_name": "er_sde",
+      "scheduler": "normal",
+      "denoise": 1.0,
+      "positive": "masterpiece, best quality, 1girl",
+      "negative": "worst quality, low quality",
+      "filename_prefix": "anima/5lora"
+    }
+  },
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": { "unet_name": "{{unet_name}}", "weight_dtype": "default" }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": { "clip_name": "{{clip_name}}", "type": "qwen_image", "device": "default" }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "{{vae_name}}" }
+  },
+  "4": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": { "lora_name": "{{lora1}}", "strength_model": "{{s1}}", "model": ["1", 0] }
+  },
+  "5": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": { "lora_name": "{{lora2}}", "strength_model": "{{s2}}", "model": ["4", 0] }
+  },
+  "6": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": { "lora_name": "{{lora3}}", "strength_model": "{{s3}}", "model": ["5", 0] }
+  },
+  "7": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": { "lora_name": "{{lora4}}", "strength_model": "{{s4}}", "model": ["6", 0] }
+  },
+  "8": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": { "lora_name": "{{lora5}}", "strength_model": "{{s5}}", "model": ["7", 0] }
+  },
+  "9": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": { "width": "{{width}}", "height": "{{height}}", "batch_size": "{{batch_size}}" }
+  },
+  "10": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{positive}}", "clip": ["2", 0] }
+  },
+  "11": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{negative}}", "clip": ["2", 0] }
+  },
+  "12": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": "{{seed}}",
+      "steps": "{{steps}}",
+      "cfg": "{{cfg}}",
+      "sampler_name": "{{sampler_name}}",
+      "scheduler": "{{scheduler}}",
+      "denoise": "{{denoise}}",
+      "model": ["8", 0],
+      "positive": ["10", 0],
+      "negative": ["11", 0],
+      "latent_image": ["9", 0]
+    }
+  },
+  "13": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["12", 0], "vae": ["3", 0] }
+  },
+  "14": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["13", 0], "filename_prefix": "{{filename_prefix}}" }
+  }
+}

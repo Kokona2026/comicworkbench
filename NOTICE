@@ -1,0 +1,38 @@
+# NOTICE
+
+本仓库只包含工具代码与文档。以下第三方内容的权利归其各自所有者，**均不分发在此仓库中**。
+
+## 运行时依赖
+
+| 组件 | 许可 | 说明 |
+|---|---|---|
+| ComfyUI | GPL-3.0 | 需使用者自行安装，不随本仓库分发 |
+| ComfyUI-Manager / GGUF / VideoHelperSuite / KJNodes / Impact-Pack | 各自仓库许可 | 需自行安装 |
+| PyTorch | BSD-3-Clause | 由 pip 安装 |
+
+## 模型权重（不分发）
+
+| 模型 | 许可 | 说明 |
+|---|---|---|
+| Anima（anima-base / turbo / aesthetic） | CircleStone Labs 非商业许可 | 商用前须自行核对上游条款 |
+| Qwen3-0.6B（文本编码器） | 见上游 Qwen 许可 | |
+| Qwen-Image VAE | 见上游许可 | |
+| Krea 2 Turbo | 见上游 Krea 许可 | |
+| Illustrious-XL / NoobAI-XL | 见上游许可 | |
+
+`config/models.manifest.json` 只记录文件名、目标目录与字节数，用于本地校验，不包含权重本体。
+
+## LoRA
+
+仓库不附带任何 LoRA。使用者从 Civitai / Hugging Face 取得的第三方 LoRA，
+其训练素材与风格归属可能与原作者意愿冲突，尤其涉及在世画师画风时。
+发布或商用前应自行评估权利状态。
+
+## 角色与商标
+
+本仓库不含任何第三方角色的图像或模型。
+使用者以本工具生成的图像若涉及第三方角色、商标或肖像，其权利状态与合规责任由使用者自负。
+
+## 图像产出
+
+`project/` 目录仅保留结构说明，图像文件由 `.gitignore` 排除，不随仓库与发行包分发。

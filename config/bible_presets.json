@@ -1,0 +1,1918 @@
+{
+ "version": 2,
+ "fields": {
+  "trigger": [
+   {
+    "en": "@m8style",
+    "zh": "鬼针草风格",
+    "cat": "画风 LoRA"
+   },
+   {
+    "en": "shiratama art",
+    "zh": "白玉风格",
+    "cat": "画风 LoRA"
+   },
+   {
+    "en": "matarou style",
+    "zh": "魔太郎风格",
+    "cat": "画风 LoRA"
+   },
+   {
+    "en": "kantoku style",
+    "zh": "カントク 监督",
+    "cat": "画风 LoRA"
+   },
+   {
+    "en": "tinkle style",
+    "zh": "てぃんくる",
+    "cat": "画风 LoRA"
+   },
+   {
+    "en": "@starrail",
+    "zh": "星穹铁道风格",
+    "cat": "画风 LoRA"
+   },
+   {
+    "en": "zzAzusa",
+    "zh": "白洲梓（IXL 版触发词）",
+    "cat": "角色 LoRA"
+   },
+   {
+    "en": "Shirasu Azusa",
+    "zh": "白洲梓（轻量版触发词）",
+    "cat": "角色 LoRA"
+   },
+   {
+    "en": "azusa \\(blue archive\\)",
+    "zh": "白洲梓·默认装",
+    "cat": "角色 LoRA"
+   },
+   {
+    "en": "azusa \\(swimsuit\\) \\(blue archive\\)",
+    "zh": "白洲梓·泳装",
+    "cat": "角色 LoRA"
+   },
+   {
+    "en": "azusa \\(racing\\) \\(blue archive\\)",
+    "zh": "白洲梓·赛车",
+    "cat": "角色 LoRA"
+   },
+   {
+    "en": "（无）",
+    "zh": "清空这一栏",
+    "cat": "控制"
+   }
+  ],
+  "hair": [
+   {
+    "en": "white hair",
+    "zh": "白发",
+    "cat": "发色"
+   },
+   {
+    "en": "silver white hair",
+    "zh": "银白发",
+    "cat": "发色"
+   },
+   {
+    "en": "platinum blonde hair",
+    "zh": "铂金发",
+    "cat": "发色"
+   },
+   {
+    "en": "blonde hair",
+    "zh": "金发",
+    "cat": "发色"
+   },
+   {
+    "en": "honey blonde hair",
+    "zh": "蜜金发",
+    "cat": "发色"
+   },
+   {
+    "en": "brown hair",
+    "zh": "棕发",
+    "cat": "发色"
+   },
+   {
+    "en": "chestnut brown hair",
+    "zh": "栗棕发",
+    "cat": "发色"
+   },
+   {
+    "en": "ash brown hair",
+    "zh": "灰棕发",
+    "cat": "发色"
+   },
+   {
+    "en": "black hair",
+    "zh": "黑发",
+    "cat": "发色"
+   },
+   {
+    "en": "blue black hair",
+    "zh": "蓝黑发",
+    "cat": "发色"
+   },
+   {
+    "en": "navy blue hair",
+    "zh": "藏青发",
+    "cat": "发色"
+   },
+   {
+    "en": "blue hair",
+    "zh": "蓝发",
+    "cat": "发色"
+   },
+   {
+    "en": "aqua hair",
+    "zh": "水蓝发",
+    "cat": "发色"
+   },
+   {
+    "en": "teal hair",
+    "zh": "青绿发",
+    "cat": "发色"
+   },
+   {
+    "en": "mint green hair",
+    "zh": "薄荷绿发",
+    "cat": "发色"
+   },
+   {
+    "en": "green hair",
+    "zh": "绿发",
+    "cat": "发色"
+   },
+   {
+    "en": "dark green hair",
+    "zh": "墨绿发",
+    "cat": "发色"
+   },
+   {
+    "en": "pink hair",
+    "zh": "粉发",
+    "cat": "发色"
+   },
+   {
+    "en": "peach pink hair",
+    "zh": "蜜桃粉发",
+    "cat": "发色"
+   },
+   {
+    "en": "red hair",
+    "zh": "红发",
+    "cat": "发色"
+   },
+   {
+    "en": "wine red hair",
+    "zh": "酒红发",
+    "cat": "发色"
+   },
+   {
+    "en": "orange hair",
+    "zh": "橙发",
+    "cat": "发色"
+   },
+   {
+    "en": "caramel hair",
+    "zh": "焦糖发",
+    "cat": "发色"
+   },
+   {
+    "en": "purple hair",
+    "zh": "紫发",
+    "cat": "发色"
+   },
+   {
+    "en": "lavender hair",
+    "zh": "薰衣草紫发",
+    "cat": "发色"
+   },
+   {
+    "en": "grey hair",
+    "zh": "灰发",
+    "cat": "发色"
+   },
+   {
+    "en": "ash grey hair",
+    "zh": "灰白发",
+    "cat": "发色"
+   },
+   {
+    "en": "two-tone hair",
+    "zh": "双色发",
+    "cat": "发色"
+   },
+   {
+    "en": "gradient hair",
+    "zh": "渐变发",
+    "cat": "发色"
+   },
+   {
+    "en": "black hair with pink streaks",
+    "zh": "黑发挑粉",
+    "cat": "发色"
+   },
+   {
+    "en": "very long hair",
+    "zh": "超长发",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "long hair",
+    "zh": "长发",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "medium hair",
+    "zh": "中长发",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "short hair",
+    "zh": "短发",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "bob cut",
+    "zh": "波波头",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "short bob",
+    "zh": "短波波",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "twintails",
+    "zh": "双马尾",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "low twintails",
+    "zh": "低双马尾",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "ponytail",
+    "zh": "马尾",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "high ponytail",
+    "zh": "高马尾",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "low ponytail",
+    "zh": "低马尾",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "side ponytail",
+    "zh": "侧马尾",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "braid",
+    "zh": "麻花辫",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "side braid",
+    "zh": "侧编发",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "twin braids",
+    "zh": "双辫",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "hair bun",
+    "zh": "丸子头",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "double bun",
+    "zh": "双丸子",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "wavy hair",
+    "zh": "波浪卷",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "curly hair",
+    "zh": "大卷",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "straight hair",
+    "zh": "直发",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "messy hair",
+    "zh": "凌乱发",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "swept back",
+    "zh": "向后梳",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "hime cut",
+    "zh": "姬发式",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "flipped ends",
+    "zh": "发尾外翘",
+    "cat": "长度与形状"
+   },
+   {
+    "en": "blunt bangs",
+    "zh": "齐刘海",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "bangs",
+    "zh": "刘海",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "parted bangs",
+    "zh": "分刘海",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "hair between eyes",
+    "zh": "眼间发",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "sidelocks",
+    "zh": "鬓发",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "ahoge",
+    "zh": "呆毛",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "hair intakes",
+    "zh": "内层挑染",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "hair over shoulder",
+    "zh": "发过肩",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "hair spread out",
+    "zh": "散发",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "wet hair",
+    "zh": "湿发",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "hair ribbon",
+    "zh": "发带",
+    "cat": "刘海与细节"
+   },
+   {
+    "en": "half updo",
+    "zh": "半扎发",
+    "cat": "刘海与细节"
+   }
+  ],
+  "eyes": [
+   {
+    "en": "blue eyes",
+    "zh": "蓝瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "navy eyes",
+    "zh": "藏青瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "aqua eyes",
+    "zh": "水蓝瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "teal eyes",
+    "zh": "青绿瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "green eyes",
+    "zh": "绿瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "emerald eyes",
+    "zh": "翡翠瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "yellow eyes",
+    "zh": "黄瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "golden eyes",
+    "zh": "金瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "amber eyes",
+    "zh": "琥珀瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "orange eyes",
+    "zh": "橙瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "red eyes",
+    "zh": "红瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "crimson eyes",
+    "zh": "绯红瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "pink eyes",
+    "zh": "粉瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "purple eyes",
+    "zh": "紫瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "violet eyes",
+    "zh": "紫罗兰瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "lavender eyes",
+    "zh": "薰衣草瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "brown eyes",
+    "zh": "棕瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "dark brown eyes",
+    "zh": "深棕瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "grey eyes",
+    "zh": "灰瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "silver eyes",
+    "zh": "银瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "heterochromia",
+    "zh": "异色瞳",
+    "cat": "瞳色"
+   },
+   {
+    "en": "tareme",
+    "zh": "下垂眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "tsurime",
+    "zh": "上挑眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "droopy eyes",
+    "zh": "垂眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "sharp eyes",
+    "zh": "锐利眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "half closed eyes",
+    "zh": "半睁眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "wide eyes",
+    "zh": "大眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "narrow eyes",
+    "zh": "细长眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "round eyes",
+    "zh": "圆眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "cat eyes",
+    "zh": "猫眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "sleepy eyes",
+    "zh": "困倦眼",
+    "cat": "眼型"
+   },
+   {
+    "en": "long eyelashes",
+    "zh": "长睫毛",
+    "cat": "眼型"
+   },
+   {
+    "en": "gentle gaze",
+    "zh": "温柔目光",
+    "cat": "眼神"
+   },
+   {
+    "en": "sharp gaze",
+    "zh": "锐利目光",
+    "cat": "眼神"
+   },
+   {
+    "en": "dreamy gaze",
+    "zh": "梦幻目光",
+    "cat": "眼神"
+   },
+   {
+    "en": "curious gaze",
+    "zh": "好奇目光",
+    "cat": "眼神"
+   },
+   {
+    "en": "seductive gaze",
+    "zh": "妩媚目光",
+    "cat": "眼神"
+   },
+   {
+    "en": "teary eyes",
+    "zh": "含泪",
+    "cat": "眼神"
+   },
+   {
+    "en": "sparkling eyes",
+    "zh": "闪亮眼",
+    "cat": "眼神"
+   },
+   {
+    "en": "looking at viewer",
+    "zh": "看向镜头",
+    "cat": "眼神"
+   },
+   {
+    "en": "looking away",
+    "zh": "移开视线",
+    "cat": "眼神"
+   },
+   {
+    "en": "closed eyes",
+    "zh": "闭眼",
+    "cat": "眼神"
+   },
+   {
+    "en": "eye contact",
+    "zh": "对视",
+    "cat": "眼神"
+   }
+  ],
+  "outfit": [
+   {
+    "en": "white blouse",
+    "zh": "白衬衫",
+    "cat": "上装"
+   },
+   {
+    "en": "white shirt",
+    "zh": "白衬衣",
+    "cat": "上装"
+   },
+   {
+    "en": "cream cardigan",
+    "zh": "奶白开衫",
+    "cat": "上装"
+   },
+   {
+    "en": "navy blazer",
+    "zh": "藏青西装外套",
+    "cat": "上装"
+   },
+   {
+    "en": "sailor collar",
+    "zh": "水手领",
+    "cat": "上装"
+   },
+   {
+    "en": "hoodie",
+    "zh": "连帽衫",
+    "cat": "上装"
+   },
+   {
+    "en": "sweater",
+    "zh": "毛衣",
+    "cat": "上装"
+   },
+   {
+    "en": "turtleneck",
+    "zh": "高领衫",
+    "cat": "上装"
+   },
+   {
+    "en": "crop top",
+    "zh": "短上衣",
+    "cat": "上装"
+   },
+   {
+    "en": "tank top",
+    "zh": "背心",
+    "cat": "上装"
+   },
+   {
+    "en": "jersey",
+    "zh": "运动球衣",
+    "cat": "上装"
+   },
+   {
+    "en": "trench coat",
+    "zh": "风衣",
+    "cat": "上装"
+   },
+   {
+    "en": "jacket",
+    "zh": "夹克",
+    "cat": "上装"
+   },
+   {
+    "en": "open jacket",
+    "zh": "敞开外套",
+    "cat": "上装"
+   },
+   {
+    "en": "raincoat",
+    "zh": "雨衣",
+    "cat": "上装"
+   },
+   {
+    "en": "pleated skirt",
+    "zh": "百褶裙",
+    "cat": "下装"
+   },
+   {
+    "en": "long skirt",
+    "zh": "长裙",
+    "cat": "下装"
+   },
+   {
+    "en": "pencil skirt",
+    "zh": "铅笔裙",
+    "cat": "下装"
+   },
+   {
+    "en": "denim shorts",
+    "zh": "牛仔短裤",
+    "cat": "下装"
+   },
+   {
+    "en": "short shorts",
+    "zh": "短裤",
+    "cat": "下装"
+   },
+   {
+    "en": "slacks",
+    "zh": "长裤",
+    "cat": "下装"
+   },
+   {
+    "en": "jeans",
+    "zh": "牛仔裤",
+    "cat": "下装"
+   },
+   {
+    "en": "hakama",
+    "zh": "袴",
+    "cat": "下装"
+   },
+   {
+    "en": "layered skirt",
+    "zh": "层叠裙",
+    "cat": "下装"
+   },
+   {
+    "en": "sundress",
+    "zh": "吊带连衣裙",
+    "cat": "连身"
+   },
+   {
+    "en": "one-piece dress",
+    "zh": "连身裙",
+    "cat": "连身"
+   },
+   {
+    "en": "sailor dress",
+    "zh": "水手连衣裙",
+    "cat": "连身"
+   },
+   {
+    "en": "maid dress",
+    "zh": "女仆装",
+    "cat": "连身"
+   },
+   {
+    "en": "apron dress",
+    "zh": "围裙连衣裙",
+    "cat": "连身"
+   },
+   {
+    "en": "kimono",
+    "zh": "和服",
+    "cat": "连身"
+   },
+   {
+    "en": "yukata",
+    "zh": "浴衣",
+    "cat": "连身"
+   },
+   {
+    "en": "overalls",
+    "zh": "背带裤",
+    "cat": "连身"
+   },
+   {
+    "en": "jumpsuit",
+    "zh": "连体裤",
+    "cat": "连身"
+   },
+   {
+    "en": "school uniform",
+    "zh": "校服",
+    "cat": "连身"
+   },
+   {
+    "en": "stage dress",
+    "zh": "舞台裙",
+    "cat": "连身"
+   },
+   {
+    "en": "one-piece swimsuit",
+    "zh": "连体泳衣",
+    "cat": "泳装"
+   },
+   {
+    "en": "halterneck swimsuit",
+    "zh": "挂脖泳衣",
+    "cat": "泳装"
+   },
+   {
+    "en": "high neck swimsuit",
+    "zh": "高领泳衣",
+    "cat": "泳装"
+   },
+   {
+    "en": "rash guard",
+    "zh": "防晒泳衣",
+    "cat": "泳装"
+   },
+   {
+    "en": "swim shorts",
+    "zh": "泳裤",
+    "cat": "泳装"
+   },
+   {
+    "en": "bikini",
+    "zh": "比基尼",
+    "cat": "泳装"
+   },
+   {
+    "en": "pareo",
+    "zh": "沙滩裙",
+    "cat": "泳装"
+   },
+   {
+    "en": "straw hat",
+    "zh": "草帽",
+    "cat": "泳装"
+   },
+   {
+    "en": "lingerie",
+    "zh": "内衣",
+    "cat": "内衣"
+   },
+   {
+    "en": "black lace",
+    "zh": "黑蕾丝",
+    "cat": "内衣"
+   },
+   {
+    "en": "garter belt",
+    "zh": "吊袜带",
+    "cat": "内衣"
+   },
+   {
+    "en": "camisole",
+    "zh": "吊带背心",
+    "cat": "内衣"
+   },
+   {
+    "en": "thighhighs",
+    "zh": "过膝袜",
+    "cat": "内衣"
+   },
+   {
+    "en": "pantyhose",
+    "zh": "连裤袜",
+    "cat": "内衣"
+   },
+   {
+    "en": "loafers",
+    "zh": "乐福鞋",
+    "cat": "鞋袜"
+   },
+   {
+    "en": "sneakers",
+    "zh": "运动鞋",
+    "cat": "鞋袜"
+   },
+   {
+    "en": "boots",
+    "zh": "靴子",
+    "cat": "鞋袜"
+   },
+   {
+    "en": "sandals",
+    "zh": "凉鞋",
+    "cat": "鞋袜"
+   },
+   {
+    "en": "heels",
+    "zh": "高跟鞋",
+    "cat": "鞋袜"
+   },
+   {
+    "en": "knee socks",
+    "zh": "及膝袜",
+    "cat": "鞋袜"
+   },
+   {
+    "en": "tights",
+    "zh": "裤袜",
+    "cat": "鞋袜"
+   },
+   {
+    "en": "barefoot",
+    "zh": "赤脚",
+    "cat": "鞋袜"
+   },
+   {
+    "en": "gloves",
+    "zh": "手套",
+    "cat": "配饰"
+   },
+   {
+    "en": "scarf",
+    "zh": "围巾",
+    "cat": "配饰"
+   },
+   {
+    "en": "choker",
+    "zh": "颈环",
+    "cat": "配饰"
+   },
+   {
+    "en": "ribbon tie",
+    "zh": "蝴蝶结领",
+    "cat": "配饰"
+   },
+   {
+    "en": "neckerchief",
+    "zh": "领巾",
+    "cat": "配饰"
+   },
+   {
+    "en": "belt",
+    "zh": "腰带",
+    "cat": "配饰"
+   },
+   {
+    "en": "backpack",
+    "zh": "背包",
+    "cat": "配饰"
+   },
+   {
+    "en": "shoulder bag",
+    "zh": "单肩包",
+    "cat": "配饰"
+   },
+   {
+    "en": "beret",
+    "zh": "贝雷帽",
+    "cat": "配饰"
+   },
+   {
+    "en": "glasses",
+    "zh": "眼镜",
+    "cat": "配饰"
+   }
+  ],
+  "signature": [
+   {
+    "en": "hair ribbon",
+    "zh": "发丝带",
+    "cat": "头饰"
+   },
+   {
+    "en": "hair clip",
+    "zh": "发夹",
+    "cat": "头饰"
+   },
+   {
+    "en": "hairpin",
+    "zh": "发针",
+    "cat": "头饰"
+   },
+   {
+    "en": "flower hair ornament",
+    "zh": "花朵发饰",
+    "cat": "头饰"
+   },
+   {
+    "en": "hair flower",
+    "zh": "发花",
+    "cat": "头饰"
+   },
+   {
+    "en": "cat ear headband",
+    "zh": "猫耳发箍",
+    "cat": "头饰"
+   },
+   {
+    "en": "maid headdress",
+    "zh": "女仆头饰",
+    "cat": "头饰"
+   },
+   {
+    "en": "veil",
+    "zh": "头纱",
+    "cat": "头饰"
+   },
+   {
+    "en": "gold hair ornament",
+    "zh": "金发饰",
+    "cat": "头饰"
+   },
+   {
+    "en": "earrings",
+    "zh": "耳环",
+    "cat": "首饰"
+   },
+   {
+    "en": "necklace",
+    "zh": "项链",
+    "cat": "首饰"
+   },
+   {
+    "en": "bead necklace",
+    "zh": "串珠项链",
+    "cat": "首饰"
+   },
+   {
+    "en": "choker",
+    "zh": "颈环",
+    "cat": "首饰"
+   },
+   {
+    "en": "bracelet",
+    "zh": "手镯",
+    "cat": "首饰"
+   },
+   {
+    "en": "ring",
+    "zh": "戒指",
+    "cat": "首饰"
+   },
+   {
+    "en": "round glasses",
+    "zh": "圆框眼镜",
+    "cat": "首饰"
+   },
+   {
+    "en": "hair ties",
+    "zh": "发圈",
+    "cat": "首饰"
+   },
+   {
+    "en": "mole under eye",
+    "zh": "眼下泪痣",
+    "cat": "面部"
+   },
+   {
+    "en": "beauty mark",
+    "zh": "美人痣",
+    "cat": "面部"
+   },
+   {
+    "en": "bandaid on cheek",
+    "zh": "脸颊创可贴",
+    "cat": "面部"
+   },
+   {
+    "en": "freckles",
+    "zh": "雀斑",
+    "cat": "面部"
+   },
+   {
+    "en": "blush",
+    "zh": "脸红",
+    "cat": "面部"
+   },
+   {
+    "en": "scar",
+    "zh": "疤痕",
+    "cat": "面部"
+   },
+   {
+    "en": "yellow halo",
+    "zh": "黄色光环",
+    "cat": "翼与光环"
+   },
+   {
+    "en": "gold halo",
+    "zh": "金色光环",
+    "cat": "翼与光环"
+   },
+   {
+    "en": "white wings",
+    "zh": "白翼",
+    "cat": "翼与光环"
+   },
+   {
+    "en": "low wings",
+    "zh": "低翼",
+    "cat": "翼与光环"
+   },
+   {
+    "en": "angel wings",
+    "zh": "天使翼",
+    "cat": "翼与光环"
+   },
+   {
+    "en": "feathered wings",
+    "zh": "羽翼",
+    "cat": "翼与光环"
+   },
+   {
+    "en": "flower ornament on wings",
+    "zh": "翼上花饰",
+    "cat": "翼与光环"
+   },
+   {
+    "en": "cat tail",
+    "zh": "猫尾",
+    "cat": "其他"
+   },
+   {
+    "en": "tail",
+    "zh": "尾巴",
+    "cat": "其他"
+   },
+   {
+    "en": "animal ears",
+    "zh": "兽耳",
+    "cat": "其他"
+   },
+   {
+    "en": "eyepatch",
+    "zh": "眼罩",
+    "cat": "其他"
+   },
+   {
+    "en": "transparent umbrella",
+    "zh": "透明伞",
+    "cat": "其他"
+   },
+   {
+    "en": "folding fan",
+    "zh": "折扇",
+    "cat": "其他"
+   },
+   {
+    "en": "tail ribbon",
+    "zh": "尾巴丝带",
+    "cat": "其他"
+   }
+  ],
+  "body": [
+   {
+    "en": "petite adult",
+    "zh": "娇小成年",
+    "cat": "身高体型"
+   },
+   {
+    "en": "small stature",
+    "zh": "个子娇小",
+    "cat": "身高体型"
+   },
+   {
+    "en": "tall",
+    "zh": "高个",
+    "cat": "身高体型"
+   },
+   {
+    "en": "slender",
+    "zh": "纤细",
+    "cat": "身高体型"
+   },
+   {
+    "en": "slim waist",
+    "zh": "细腰",
+    "cat": "身高体型"
+   },
+   {
+    "en": "narrow hips",
+    "zh": "窄胯",
+    "cat": "身高体型"
+   },
+   {
+    "en": "long legs",
+    "zh": "长腿",
+    "cat": "身高体型"
+   },
+   {
+    "en": "toned",
+    "zh": "结实",
+    "cat": "身高体型"
+   },
+   {
+    "en": "curvy",
+    "zh": "丰满",
+    "cat": "身高体型"
+   },
+   {
+    "en": "wide hips",
+    "zh": "宽胯",
+    "cat": "身高体型"
+   },
+   {
+    "en": "delicate frame",
+    "zh": "骨架轻薄",
+    "cat": "身高体型"
+   },
+   {
+    "en": "adult woman",
+    "zh": "成年女性",
+    "cat": "年龄感"
+   },
+   {
+    "en": "mature female",
+    "zh": "成熟女性",
+    "cat": "年龄感"
+   },
+   {
+    "en": "mature face",
+    "zh": "成熟脸",
+    "cat": "年龄感"
+   },
+   {
+    "en": "early twenties",
+    "zh": "二十出头",
+    "cat": "年龄感"
+   },
+   {
+    "en": "mid twenties",
+    "zh": "二十五六",
+    "cat": "年龄感"
+   },
+   {
+    "en": "pale skin",
+    "zh": "白皙皮肤",
+    "cat": "皮肤"
+   },
+   {
+    "en": "tan skin",
+    "zh": "小麦色皮肤",
+    "cat": "皮肤"
+   },
+   {
+    "en": "freckled skin",
+    "zh": "雀斑皮肤",
+    "cat": "皮肤"
+   }
+  ],
+  "personality": [
+   {
+    "en": "gentle smile",
+    "zh": "温柔微笑",
+    "cat": "情绪"
+   },
+   {
+    "en": "calm",
+    "zh": "平静",
+    "cat": "情绪"
+   },
+   {
+    "en": "cheerful smile",
+    "zh": "开朗笑",
+    "cat": "情绪"
+   },
+   {
+    "en": "open mouth",
+    "zh": "张嘴笑",
+    "cat": "情绪"
+   },
+   {
+    "en": "shy",
+    "zh": "害羞",
+    "cat": "情绪"
+   },
+   {
+    "en": "blushing",
+    "zh": "脸红",
+    "cat": "情绪"
+   },
+   {
+    "en": "embarrassed",
+    "zh": "窘迫",
+    "cat": "情绪"
+   },
+   {
+    "en": "surprised",
+    "zh": "惊讶",
+    "cat": "情绪"
+   },
+   {
+    "en": "angry",
+    "zh": "生气",
+    "cat": "情绪"
+   },
+   {
+    "en": "crying",
+    "zh": "哭泣",
+    "cat": "情绪"
+   },
+   {
+    "en": "sleepy",
+    "zh": "困倦",
+    "cat": "情绪"
+   },
+   {
+    "en": "serious",
+    "zh": "严肃",
+    "cat": "情绪"
+   },
+   {
+    "en": "reserved",
+    "zh": "内敛",
+    "cat": "气质"
+   },
+   {
+    "en": "kuudere",
+    "zh": "清冷",
+    "cat": "气质"
+   },
+   {
+    "en": "playful",
+    "zh": "俏皮",
+    "cat": "气质"
+   },
+   {
+    "en": "teasing smile",
+    "zh": "坏笑",
+    "cat": "气质"
+   },
+   {
+    "en": "confident",
+    "zh": "自信",
+    "cat": "气质"
+   },
+   {
+    "en": "smirk",
+    "zh": "挑眉笑",
+    "cat": "气质"
+   },
+   {
+    "en": "dreamy",
+    "zh": "梦幻",
+    "cat": "气质"
+   },
+   {
+    "en": "elegant",
+    "zh": "优雅",
+    "cat": "气质"
+   },
+   {
+    "en": "mysterious",
+    "zh": "神秘",
+    "cat": "气质"
+   }
+  ],
+  "extras": [
+   {
+    "en": "classroom",
+    "zh": "教室",
+    "cat": "室内"
+   },
+   {
+    "en": "library",
+    "zh": "图书馆",
+    "cat": "室内"
+   },
+   {
+    "en": "bedroom",
+    "zh": "卧室",
+    "cat": "室内"
+   },
+   {
+    "en": "cafe interior",
+    "zh": "咖啡店内",
+    "cat": "室内"
+   },
+   {
+    "en": "kitchen",
+    "zh": "厨房",
+    "cat": "室内"
+   },
+   {
+    "en": "studio",
+    "zh": "画室",
+    "cat": "室内"
+   },
+   {
+    "en": "concert hall",
+    "zh": "音乐厅",
+    "cat": "室内"
+   },
+   {
+    "en": "shrine",
+    "zh": "神社",
+    "cat": "室内"
+   },
+   {
+    "en": "tatami room",
+    "zh": "和室",
+    "cat": "室内"
+   },
+   {
+    "en": "clinic room",
+    "zh": "诊室",
+    "cat": "室内"
+   },
+   {
+    "en": "workshop",
+    "zh": "工作室",
+    "cat": "室内"
+   },
+   {
+    "en": "beach",
+    "zh": "沙滩",
+    "cat": "室外"
+   },
+   {
+    "en": "rooftop",
+    "zh": "天台",
+    "cat": "室外"
+   },
+   {
+    "en": "city street",
+    "zh": "城市街道",
+    "cat": "室外"
+   },
+   {
+    "en": "park",
+    "zh": "公园",
+    "cat": "室外"
+   },
+   {
+    "en": "school gate",
+    "zh": "校门",
+    "cat": "室外"
+   },
+   {
+    "en": "greenhouse",
+    "zh": "温室",
+    "cat": "室外"
+   },
+   {
+    "en": "race track",
+    "zh": "赛道",
+    "cat": "室外"
+   },
+   {
+    "en": "dive boat",
+    "zh": "潜水船",
+    "cat": "室外"
+   },
+   {
+    "en": "old town street",
+    "zh": "老街",
+    "cat": "室外"
+   },
+   {
+    "en": "seaside town",
+    "zh": "海边小镇",
+    "cat": "室外"
+   },
+   {
+    "en": "torii gate",
+    "zh": "鸟居",
+    "cat": "室外"
+   },
+   {
+    "en": "afternoon light",
+    "zh": "午后光",
+    "cat": "时间与光"
+   },
+   {
+    "en": "golden hour",
+    "zh": "黄金时刻",
+    "cat": "时间与光"
+   },
+   {
+    "en": "sunset",
+    "zh": "日落",
+    "cat": "时间与光"
+   },
+   {
+    "en": "night",
+    "zh": "夜晚",
+    "cat": "时间与光"
+   },
+   {
+    "en": "neon signs",
+    "zh": "霓虹灯",
+    "cat": "时间与光"
+   },
+   {
+    "en": "morning light",
+    "zh": "晨光",
+    "cat": "时间与光"
+   },
+   {
+    "en": "candle light",
+    "zh": "烛光",
+    "cat": "时间与光"
+   },
+   {
+    "en": "spotlight",
+    "zh": "聚光灯",
+    "cat": "时间与光"
+   },
+   {
+    "en": "soft rim light",
+    "zh": "柔和轮廓光",
+    "cat": "时间与光"
+   },
+   {
+    "en": "backlight",
+    "zh": "逆光",
+    "cat": "时间与光"
+   },
+   {
+    "en": "warm lamp light",
+    "zh": "暖灯光",
+    "cat": "时间与光"
+   },
+   {
+    "en": "rain",
+    "zh": "下雨",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "rain wet asphalt",
+    "zh": "雨湿地面",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "snow",
+    "zh": "下雪",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "cherry blossoms",
+    "zh": "樱花",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "autumn leaves",
+    "zh": "红叶",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "fog",
+    "zh": "薄雾",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "clear sky",
+    "zh": "晴空",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "clouds",
+    "zh": "云",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "lens flare",
+    "zh": "镜头光斑",
+    "cat": "天气与季节"
+   },
+   {
+    "en": "depth of field",
+    "zh": "景深",
+    "cat": "镜头"
+   },
+   {
+    "en": "bokeh",
+    "zh": "虚化",
+    "cat": "镜头"
+   },
+   {
+    "en": "close-up",
+    "zh": "特写",
+    "cat": "镜头"
+   },
+   {
+    "en": "full body",
+    "zh": "全身",
+    "cat": "镜头"
+   },
+   {
+    "en": "cowboy shot",
+    "zh": "七分身",
+    "cat": "镜头"
+   },
+   {
+    "en": "from side",
+    "zh": "侧面",
+    "cat": "镜头"
+   },
+   {
+    "en": "from behind",
+    "zh": "背面",
+    "cat": "镜头"
+   },
+   {
+    "en": "from above",
+    "zh": "俯视",
+    "cat": "镜头"
+   },
+   {
+    "en": "dutch angle",
+    "zh": "倾斜构图",
+    "cat": "镜头"
+   }
+  ],
+  "pose": [
+   {
+    "en": "standing",
+    "zh": "站立",
+    "cat": "站姿"
+   },
+   {
+    "en": "contrapposto",
+    "zh": "重心偏一侧",
+    "cat": "站姿"
+   },
+   {
+    "en": "arms at side",
+    "zh": "双手垂放",
+    "cat": "站姿"
+   },
+   {
+    "en": "hands behind back",
+    "zh": "双手背后",
+    "cat": "站姿"
+   },
+   {
+    "en": "arms crossed",
+    "zh": "抱臂",
+    "cat": "站姿"
+   },
+   {
+    "en": "hand on hip",
+    "zh": "单手叉腰",
+    "cat": "站姿"
+   },
+   {
+    "en": "hands on hips",
+    "zh": "双手叉腰",
+    "cat": "站姿"
+   },
+   {
+    "en": "leaning against wall",
+    "zh": "靠墙",
+    "cat": "站姿"
+   },
+   {
+    "en": "legs crossed",
+    "zh": "双腿交叉",
+    "cat": "站姿"
+   },
+   {
+    "en": "standing on one leg",
+    "zh": "单脚站",
+    "cat": "站姿"
+   },
+   {
+    "en": "tiptoe",
+    "zh": "踮脚",
+    "cat": "站姿"
+   },
+   {
+    "en": "walking",
+    "zh": "行走",
+    "cat": "站姿"
+   },
+   {
+    "en": "sitting",
+    "zh": "坐着",
+    "cat": "坐姿"
+   },
+   {
+    "en": "seiza",
+    "zh": "正坐",
+    "cat": "坐姿"
+   },
+   {
+    "en": "sitting on chair",
+    "zh": "坐椅子",
+    "cat": "坐姿"
+   },
+   {
+    "en": "sitting on floor",
+    "zh": "坐地上",
+    "cat": "坐姿"
+   },
+   {
+    "en": "sitting on windowsill",
+    "zh": "坐窗台",
+    "cat": "坐姿"
+   },
+   {
+    "en": "knees up",
+    "zh": "抱膝坐",
+    "cat": "坐姿"
+   },
+   {
+    "en": "hugging knees",
+    "zh": "抱膝",
+    "cat": "坐姿"
+   },
+   {
+    "en": "legs crossed sitting",
+    "zh": "翘腿坐",
+    "cat": "坐姿"
+   },
+   {
+    "en": "leaning back on hands",
+    "zh": "双手后撑",
+    "cat": "坐姿"
+   },
+   {
+    "en": "sideways sitting",
+    "zh": "侧坐",
+    "cat": "坐姿"
+   },
+   {
+    "en": "straddling chair",
+    "zh": "跨坐椅背",
+    "cat": "坐姿"
+   },
+   {
+    "en": "lying on back",
+    "zh": "仰卧",
+    "cat": "卧姿"
+   },
+   {
+    "en": "lying on side",
+    "zh": "侧卧",
+    "cat": "卧姿"
+   },
+   {
+    "en": "lying on stomach",
+    "zh": "趴着",
+    "cat": "卧姿"
+   },
+   {
+    "en": "on bed",
+    "zh": "床上",
+    "cat": "卧姿"
+   },
+   {
+    "en": "head on pillow",
+    "zh": "头枕枕头",
+    "cat": "卧姿"
+   },
+   {
+    "en": "reclining",
+    "zh": "斜躺",
+    "cat": "卧姿"
+   },
+   {
+    "en": "running",
+    "zh": "奔跑",
+    "cat": "动态"
+   },
+   {
+    "en": "jumping",
+    "zh": "跳跃",
+    "cat": "动态"
+   },
+   {
+    "en": "dancing",
+    "zh": "跳舞",
+    "cat": "动态"
+   },
+   {
+    "en": "stretching",
+    "zh": "伸展",
+    "cat": "动态"
+   },
+   {
+    "en": "reaching up",
+    "zh": "举手够高",
+    "cat": "动态"
+   },
+   {
+    "en": "turning around",
+    "zh": "转身",
+    "cat": "动态"
+   },
+   {
+    "en": "looking back over shoulder",
+    "zh": "回头看",
+    "cat": "动态"
+   },
+   {
+    "en": "bending forward",
+    "zh": "前倾",
+    "cat": "动态"
+   },
+   {
+    "en": "spinning",
+    "zh": "旋转",
+    "cat": "动态"
+   },
+   {
+    "en": "swinging legs",
+    "zh": "晃腿",
+    "cat": "动态"
+   },
+   {
+    "en": "hand on cheek",
+    "zh": "手托脸颊",
+    "cat": "手部动作"
+   },
+   {
+    "en": "hand in hair",
+    "zh": "手插发间",
+    "cat": "手部动作"
+   },
+   {
+    "en": "adjusting hair",
+    "zh": "整理头发",
+    "cat": "手部动作"
+   },
+   {
+    "en": "holding hat brim",
+    "zh": "扶帽檐",
+    "cat": "手部动作"
+   },
+   {
+    "en": "hand on chest",
+    "zh": "手放胸前",
+    "cat": "手部动作"
+   },
+   {
+    "en": "pointing",
+    "zh": "指着",
+    "cat": "手部动作"
+   },
+   {
+    "en": "waving",
+    "zh": "挥手",
+    "cat": "手部动作"
+   },
+   {
+    "en": "hands up",
+    "zh": "双手举起",
+    "cat": "手部动作"
+   },
+   {
+    "en": "holding book",
+    "zh": "拿书",
+    "cat": "手部动作"
+   },
+   {
+    "en": "holding cup",
+    "zh": "拿杯子",
+    "cat": "手部动作"
+   },
+   {
+    "en": "arms behind head",
+    "zh": "双手抱头",
+    "cat": "手部动作"
+   },
+   {
+    "en": "fingers on lips",
+    "zh": "手指抵唇",
+    "cat": "手部动作"
+   },
+   {
+    "en": "looking at viewer",
+    "zh": "看向镜头",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "looking away",
+    "zh": "移开视线",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "from side",
+    "zh": "侧面",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "from behind",
+    "zh": "背面",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "from above",
+    "zh": "俯视",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "from below",
+    "zh": "仰视",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "close-up",
+    "zh": "特写",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "upper body",
+    "zh": "半身",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "cowboy shot",
+    "zh": "七分身",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "full body",
+    "zh": "全身",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "dutch angle",
+    "zh": "倾斜构图",
+    "cat": "镜头配合"
+   },
+   {
+    "en": "profile",
+    "zh": "侧脸",
+    "cat": "镜头配合"
+   }
+  ]
+ }
+}

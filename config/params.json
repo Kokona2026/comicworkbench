@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "note": "Parameter quick reference. Values are starting points; final values come from measurements on your own machine (reports/baseline.json).",
+  "profiles": {
+    "anima_base": {
+      "label": "Anima 出图",
+      "model": "anima-base-v1.0",
+      "resolution": "about 1MP (512^2 - 1536^2)",
+      "steps": 40,
+      "steps_range": [30, 50],
+      "cfg": 4.5,
+      "cfg_range": [4, 5],
+      "sampler": "er_sde",
+      "scheduler": "normal",
+      "quality_tags": "masterpiece, best quality, score_7",
+      "alt_sampler": "euler_a (softer lines, higher CFG tolerable)"
+    },
+    "anima_turbo": {
+      "label": "Anima Turbo",
+      "model": "Anima-Turbo",
+      "resolution": "about 1MP",
+      "steps": 10,
+      "steps_range": [8, 12],
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "normal",
+      "note": "fast, lower diversity"
+    },
+    "anima_aesthetic": {
+      "label": "Anima Aesthetic",
+      "model": "Anima-Aesthetic",
+      "resolution": "about 1MP",
+      "steps": null,
+      "cfg": null,
+      "sampler": "euler",
+      "scheduler": "normal",
+      "note": "follow the model card; author advises dropping score tags"
+    },
+    "lora_test": {
+      "label": "LoRA 测试网格",
+      "model": "anima-base-v1.0 + LoRA 0.6-1.0",
+      "resolution": "about 1MP",
+      "steps": 30,
+      "cfg": 4,
+      "sampler": "er_sde",
+      "scheduler": "normal",
+      "note": "compare 3 fixed seeds side by side"
+    },
+    "strict_pose": {
+      "label": "姿势严格的镜头",
+      "model": "Illustrious XL + ControlNet",
+      "resolution": "up to 1536^2 native",
+      "steps": null,
+      "cfg": null,
+      "sampler": "per base model card",
+      "scheduler": "per base model card",
+      "note": "use union / anytest class ControlNet"
+    },
+    "qwen_edit": {
+      "label": "换装与变体",
+      "model": "Qwen-Image 2.1 edit",
+      "resolution": "per template",
+      "steps": null,
+      "cfg": null,
+      "sampler": "per template",
+      "scheduler": "per template",
+      "note": "say what to keep, then one change only"
+    },
+    "wan_i2v": {
+      "label": "图生视频",
+      "model": "Wan 2.2 I2V A14B + lightx2v",
+      "resolution": "832x480",
+      "steps": 4,
+      "steps_range": [4, 8],
+      "cfg": 1,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "shift": 5.0,
+      "frames": 81,
+      "fps": 16,
+      "note": "81 frames ~= 5s at 16fps"
+    }
+  },
+  "training": {
+    "base_model": "anima-base-v1.0",
+    "resolution": 1024,
+    "aspect_bucketing": true,
+    "learning_rate": "1e-5 - 2e-5",
+    "rank": [32, 64],
+    "batch": [1, 4],
+    "optimizer": "AdamW8bit",
+    "save_every": 200,
+    "vram_gb": "7 - 14",
+    "step_policy": "judge by sample grids, not by step count; community reports diverge from 1.8k to 12k"
+  },
+  "lora_grid": {
+    "seeds": [123456789, 987654321, 555000111],
+    "strengths": [0.6, 0.8, 1.0],
+    "prompts": ["front view", "from side", "from behind", "close-up expression", "different outfit and scene"]
+  },
+  "panel": {
+    "landscape": [1152, 896],
+    "portrait": [896, 1152],
+    "square": [1024, 1024],
+    "note": "keep near 1MP; do not stretch to extreme ratios"
+  },
+  "shots": [
+    "close-up", "portrait", "upper body", "cowboy shot", "full body",
+    "from above", "from below", "from side", "from behind"
+  ],
+  "expressions": ["smile", "angry", "crying", "surprised", "embarrassed", "serious", "sad", "calm"]
+}

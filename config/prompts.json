@@ -1,0 +1,348 @@
+{
+  "version": 1,
+  "tag_order": "quality -> meta -> year -> safety -> count/character/source -> artist -> general. Lowercase, spaces separators; only score tags use underscores.",
+  "negative_default": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+  "templates": {
+    "stage1_master": {
+      "stage": 1,
+      "title": "角色主图",
+      "params_key": "anima_base",
+      "placeholders": [
+        "hair",
+        "eyes",
+        "outfit",
+        "signature"
+      ],
+      "positive": "masterpiece, best quality, score_7, safe,\n1girl, solo, original,\n{{hair}}, {{eyes}}, {{outfit}}, {{signature}},\nfull body, standing, looking at viewer, simple background, white background",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "note": "Generate 16 at once; record the seed of the chosen one.",
+      "workflow": "anima-txt2img.json",
+      "width": 1024,
+      "height": 1024,
+      "group": "char"
+    },
+    "stage1_multiview": {
+      "stage": 1,
+      "title": "多视图（逐视角单独出图）",
+      "params_key": "anima_base",
+      "placeholders": [
+        "appearance",
+        "view"
+      ],
+      "positive": "masterpiece, best quality, score_7, safe,\n1girl, solo, original,\n{{appearance}},\n{{view}}, full body, simple background, white background",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "note": "Never put front/side/back into one prompt; the model reads them as style words. One view per run: from side / from behind.",
+      "group": "char"
+    },
+    "stage1_expression": {
+      "stage": 1,
+      "title": "表情集（半身、同一背景，只改表情）",
+      "params_key": "anima_base",
+      "placeholders": [
+        "appearance",
+        "expression"
+      ],
+      "positive": "masterpiece, best quality, score_7, safe,\n1girl, solo, original,\n{{appearance}},\n{{expression}}, upper body, looking at viewer, simple background, white background",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "note": "6-8 expressions: smile, angry, crying, surprised, embarrassed, serious.",
+      "group": "char"
+    },
+    "stage1_qwen_edit": {
+      "stage": 1,
+      "title": "Qwen-Image 2.1 编辑（先保持、再构图、最后一个改变）",
+      "params_key": "qwen_edit",
+      "placeholders": [
+        "keep",
+        "change"
+      ],
+      "positive": "{{keep}}.\nKeep the art style and the white background unchanged.\nOnly change {{change}}.",
+      "negative": "",
+      "note": "Works from the master image as reference. Check every variant: it can paste faces and duplicate people."
+    },
+    "stage2_caption": {
+      "stage": 2,
+      "title": "数据集标签",
+      "params_key": null,
+      "placeholders": [
+        "trigger",
+        "variable_tags"
+      ],
+      "positive": "{{trigger}}, 1girl, solo, {{variable_tags}}",
+      "negative": "",
+      "note": "Auto-tag with WD14, then delete fixed traits (hair/eyes/default outfit) so the LoRA learns them from pixels. Trigger word first; keep expression/pose/view/background.",
+      "group": "loratest"
+    },
+    "stage2_grid": {
+      "stage": 2,
+      "title": "LoRA 测试网格",
+      "params_key": "lora_test",
+      "placeholders": [
+        "trigger",
+        "view_or_expression",
+        "outfit_or_scene"
+      ],
+      "positive": "masterpiece, best quality, score_7, safe,\n1girl, solo, {{trigger}}, {{view_or_expression}}, {{outfit_or_scene}}",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "note": "Every checkpoint x 3 fixed seeds x 5 prompts x strength 0.6/0.8/1.0.",
+      "workflow": "anima-lora-test.json",
+      "width": 1024,
+      "height": 1024,
+      "group": "loratest"
+    },
+    "stage3_illustration": {
+      "stage": 3,
+      "title": "插画 · 窗边午后",
+      "params_key": "anima_base",
+      "workflow": "anima-dualstyle.json",
+      "width": 832,
+      "height": 1216,
+      "seed": 970001,
+      "placeholders": [],
+      "positive": "masterpiece, best quality, @m8style, shiratama art, 1girl, solo, adult woman, mature female, tall and slim, slender, silver white hair, very long hair, straight hair, hair between eyes, purple flower hair ornament, black hair ribbon, gold halo, white feathered angel wings, flower ornament on wings, violet eyes, pink eyes, gentle smile, looking at viewer, navy blue dress, white sailor collar, gold buttons, sitting on window sill, knees up, one hand on windowsill, three-quarter view, seaside room, large window, white curtain, afternoon light, blue sky outside, soft rim light, floating dust motes, fine lineart, soft pastel colors, delicate shading, depth of field",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, deformed, cropped head, cropped legs, child, kid, toddler, loli, chibi, young girl, teen, oversized head, short stature, petite, baby face, thick thighs, wide hips, nsfw, nude, nipples, cleavage, deep v neck, underwear, see-through, wet clothes",
+      "note": "成年角色 + 场景已写全，选中即可生成；想换人就用左侧「角色卡」插入/替换正向，或用「插入并出图」一键出角色图。",
+      "group": "illust"
+    },
+    "stage3_krita_fix": {
+      "stage": 3,
+      "title": "Krita 局部重绘",
+      "params_key": null,
+      "placeholders": [
+        "region_content"
+      ],
+      "positive": "{{region_content}}",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "note": "denoise 0.3-0.5 to start; prompt only describes the selection; one region per step, new layer each time."
+    },
+    "stage3_upscale": {
+      "stage": 3,
+      "title": "放大与分块重绘",
+      "params_key": null,
+      "placeholders": [
+        "subject"
+      ],
+      "positive": "{{subject}}, masterpiece, best quality",
+      "negative": "worst quality, low quality, score_1, score_2, score_3",
+      "note": "Upscale 2-3x first, then tile redraw at denoise 0.2-0.35. Anima LLLite Tiled ControlNet multidiffusion averages overlaps -> no seams."
+    },
+    "stage3_variant": {
+      "stage": 3,
+      "title": "换装 / 表情变体",
+      "params_key": "qwen_edit",
+      "placeholders": [
+        "change"
+      ],
+      "positive": "Same girl, same face, same hairstyle and hairpin.\nKeep the pose, framing and background unchanged.\nOnly change {{change}}.",
+      "negative": "",
+      "note": "Verify each variant against the bible."
+    },
+    "stage4_panel": {
+      "stage": 4,
+      "title": "漫画逐格（固定头 + 变量）",
+      "params_key": "anima_base",
+      "placeholders": [
+        "trigger",
+        "appearance",
+        "shot",
+        "expression",
+        "action",
+        "background"
+      ],
+      "positive": "masterpiece, best quality, score_7, safe, 1girl, solo, {{trigger}}, {{appearance}},\n{{shot}}, {{expression}}, {{action}}, {{background}}",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "note": "Repeat the core traits in every important prompt; never write a vague 'same girl'.",
+      "workflow": "anima-dualstyle.json",
+      "width": 1152,
+      "height": 896,
+      "group": "panel"
+    },
+    "stage4_monochrome": {
+      "stage": 4,
+      "title": "黑白稿",
+      "params_key": "anima_base",
+      "placeholders": [
+        "panel_prompt"
+      ],
+      "positive": "{{panel_prompt}}, monochrome, greyscale",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, nsfw, explicit",
+      "note": "Alternative: keep colour and desaturate + add screentone in the layout app. Make one sample panel of each before choosing.",
+      "group": "panel"
+    },
+    "stage5_motion": {
+      "stage": 5,
+      "title": "动画动作提示词",
+      "params_key": "wan_i2v",
+      "placeholders": [
+        "action",
+        "expression_change",
+        "camera",
+        "environment"
+      ],
+      "positive": "{{action}}, {{expression_change}}, {{camera}}, {{environment}}",
+      "negative": "",
+      "note": "First frame already carries the look: write motion only, one or two actions per clip. Distilled model: CFG 1, negative empty."
+    },
+    "stage3_swim_w1_highneck": {
+      "stage": 3,
+      "title": "白泳装① 高领连体 · 沙滩",
+      "params_key": "anima_base",
+      "workflow": "anima-swim-white.json",
+      "width": 832,
+      "height": 1216,
+      "seed": 930101,
+      "placeholders": [],
+      "positive": "masterpiece, best quality, @m8style, shiratama art, 1girl, solo, adult woman, mature female, 24 years old, adult face, refined adult features, tall and slim, slender build, willowy, delicate frame, very long legs, slim legs, thin arms, narrow waist, narrow hips, small breasts, long neck, small head, adult proportions, elegant, graceful, silver white hair, very long hair, straight hair, hair between eyes, purple flower hair ornament, purple flower, black hair ribbon, gold halo, halo above head, white feathered angel wings, flower ornament on wings, violet eyes, pink eyes, gentle smile, looking at viewer, white swimsuit, cream white swimsuit, ivory white, gold trim, pearl, white high-neck one-piece swimsuit, sleeveless, gold buttons, white pareo, straw hat, barefoot, standing, full body, from side, holding straw hat, wind, beach, turquoise sea, white sand, blue sky, clouds, sunlight, lens flare, depth of field",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, deformed, cropped head, cropped legs, child, kid, toddler, loli, chibi, young girl, teen, oversized head, short stature, petite, baby face, navy swimsuit, dark colored swimsuit, black swimsuit, thick thighs, wide hips, muscular, chubby, plump, large breasts, huge breasts, nsfw, nude, nipples, cleavage, deep v neck, underwear, see-through, wet clothes, cameltoe, spread legs, suggestive pose, close-up on chest, close-up on hips",
+      "note": "成年纤细体型 · 白色泳装款 · 鬼针草0.72×白玉0.60 · 832×1216 · seed 930101（清空种子即随机）",
+      "group": "swim"
+    },
+    "stage3_swim_w2_swimdress_beach": {
+      "stage": 3,
+      "title": "白泳装② 水手领裙式 · 沙滩",
+      "params_key": "anima_base",
+      "workflow": "anima-swim-white.json",
+      "width": 832,
+      "height": 1216,
+      "seed": 930102,
+      "placeholders": [],
+      "positive": "masterpiece, best quality, @m8style, shiratama art, 1girl, solo, adult woman, mature female, 24 years old, adult face, refined adult features, tall and slim, slender build, willowy, delicate frame, very long legs, slim legs, thin arms, narrow waist, narrow hips, small breasts, long neck, small head, adult proportions, elegant, graceful, silver white hair, very long hair, straight hair, hair between eyes, purple flower hair ornament, purple flower, black hair ribbon, gold halo, halo above head, white feathered angel wings, flower ornament on wings, violet eyes, pink eyes, gentle smile, looking at viewer, white swimsuit, cream white swimsuit, ivory white, gold trim, pearl, white swimdress, sailor collar, frilled skirt, gold line trim, cream hem, barefoot, standing, full body, arms behind back, gentle smile, beach, turquoise sea, white sand, blue sky, clouds, sunlight, lens flare, depth of field",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, deformed, cropped head, cropped legs, child, kid, toddler, loli, chibi, young girl, teen, oversized head, short stature, petite, baby face, navy swimsuit, dark colored swimsuit, black swimsuit, thick thighs, wide hips, muscular, chubby, plump, large breasts, huge breasts, nsfw, nude, nipples, cleavage, deep v neck, underwear, see-through, wet clothes, cameltoe, spread legs, suggestive pose, close-up on chest, close-up on hips",
+      "note": "成年纤细体型 · 白色泳装款 · 鬼针草0.72×白玉0.60 · 832×1216 · seed 930102（清空种子即随机）",
+      "group": "swim"
+    },
+    "stage3_swim_w3_swimdress_window": {
+      "stage": 3,
+      "title": "白泳装③ 水手领裙式 · 窗台",
+      "params_key": "anima_base",
+      "workflow": "anima-swim-white.json",
+      "width": 832,
+      "height": 1216,
+      "seed": 930103,
+      "placeholders": [],
+      "positive": "masterpiece, best quality, @m8style, shiratama art, 1girl, solo, adult woman, mature female, 24 years old, adult face, refined adult features, tall and slim, slender build, willowy, delicate frame, very long legs, slim legs, thin arms, narrow waist, narrow hips, small breasts, long neck, small head, adult proportions, elegant, graceful, silver white hair, very long hair, straight hair, hair between eyes, purple flower hair ornament, purple flower, black hair ribbon, gold halo, halo above head, white feathered angel wings, flower ornament on wings, violet eyes, pink eyes, gentle smile, looking at viewer, white swimsuit, cream white swimsuit, ivory white, gold trim, pearl, white swimdress, sailor collar, frilled skirt, gold line trim, cream hem, barefoot, sitting on window sill, knees up, leaning back on hands, three-quarter view, seaside room, large window, white curtain, blue sky outside, soft light, depth of field",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, deformed, cropped head, cropped legs, child, kid, toddler, loli, chibi, young girl, teen, oversized head, short stature, petite, baby face, navy swimsuit, dark colored swimsuit, black swimsuit, thick thighs, wide hips, muscular, chubby, plump, large breasts, huge breasts, nsfw, nude, nipples, cleavage, deep v neck, underwear, see-through, wet clothes, cameltoe, spread legs, suggestive pose, close-up on chest, close-up on hips",
+      "note": "成年纤细体型 · 白色泳装款 · 鬼针草0.72×白玉0.60 · 832×1216 · seed 930103（清空种子即随机）",
+      "group": "swim"
+    },
+    "stage3_swim_w4_tankini_pool": {
+      "stage": 3,
+      "title": "白泳装④ Tankini · 池边",
+      "params_key": "anima_base",
+      "workflow": "anima-swim-white.json",
+      "width": 832,
+      "height": 1216,
+      "seed": 930104,
+      "placeholders": [],
+      "positive": "masterpiece, best quality, @m8style, shiratama art, 1girl, solo, adult woman, mature female, 24 years old, adult face, refined adult features, tall and slim, slender build, willowy, delicate frame, very long legs, slim legs, thin arms, narrow waist, narrow hips, small breasts, long neck, small head, adult proportions, elegant, graceful, silver white hair, very long hair, straight hair, hair between eyes, purple flower hair ornament, purple flower, black hair ribbon, gold halo, halo above head, white feathered angel wings, flower ornament on wings, violet eyes, pink eyes, gentle smile, looking at viewer, white swimsuit, cream white swimsuit, ivory white, gold trim, pearl, white tankini, halter top with frilled trim, high-waisted white swim shorts, gold accents, barefoot, sitting on pool edge, legs in water, from side, hands on edge, resort pool, clear water, tiled edge, parasol, palm trees, sunny day, depth of field",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, deformed, cropped head, cropped legs, child, kid, toddler, loli, chibi, young girl, teen, oversized head, short stature, petite, baby face, navy swimsuit, dark colored swimsuit, black swimsuit, thick thighs, wide hips, muscular, chubby, plump, large breasts, huge breasts, nsfw, nude, nipples, cleavage, deep v neck, underwear, see-through, wet clothes, cameltoe, spread legs, suggestive pose, close-up on chest, close-up on hips",
+      "note": "成年纤细体型 · 白色泳装款 · 鬼针草0.72×白玉0.60 · 832×1216 · seed 930104（清空种子即随机）",
+      "group": "swim"
+    },
+    "stage3_illustration_beach": {
+      "stage": 3,
+      "title": "插画 · 海边黄昏",
+      "params_key": "anima_base",
+      "workflow": "anima-dualstyle.json",
+      "width": 832,
+      "height": 1216,
+      "seed": 970002,
+      "placeholders": [],
+      "positive": "masterpiece, best quality, @m8style, shiratama art, 1girl, solo, adult woman, mature female, tall and slim, slender, silver white hair, very long hair, straight hair, hair between eyes, purple flower hair ornament, black hair ribbon, gold halo, white feathered angel wings, flower ornament on wings, violet eyes, pink eyes, gentle smile, looking at viewer, white sundress, wide brim straw hat, barefoot, holding hat brim, standing on beach, full body, wind, golden hour, low sun, long shadows, warm rim light, sea sparkle, lens flare, fine lineart, soft pastel colors, delicate shading, depth of field",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, deformed, cropped head, cropped legs, child, kid, toddler, loli, chibi, young girl, teen, oversized head, short stature, petite, baby face, thick thighs, wide hips, nsfw, nude, nipples, cleavage, deep v neck, underwear, see-through, wet clothes",
+      "note": "成年角色 + 场景已写全，选中即可生成；想换人就用左侧「角色卡」插入/替换正向，或用「插入并出图」一键出角色图。",
+      "group": "illust"
+    },
+    "stage3_illustration_night": {
+      "stage": 3,
+      "title": "插画 · 夜景街道",
+      "params_key": "anima_base",
+      "workflow": "anima-dualstyle.json",
+      "width": 832,
+      "height": 1216,
+      "seed": 970003,
+      "placeholders": [],
+      "positive": "masterpiece, best quality, @m8style, shiratama art, 1girl, solo, adult woman, mature female, tall and slim, slender, silver white hair, very long hair, straight hair, hair between eyes, purple flower hair ornament, black hair ribbon, gold halo, white feathered angel wings, flower ornament on wings, violet eyes, pink eyes, gentle smile, looking at viewer, white blouse, navy blue pleated skirt, black ribbon tie, standing on city street, holding transparent umbrella, looking back over shoulder, night, neon signs, purple and blue lighting, rain wet asphalt, reflections, bokeh, fine lineart, soft pastel colors, delicate shading, depth of field",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, deformed, cropped head, cropped legs, child, kid, toddler, loli, chibi, young girl, teen, oversized head, short stature, petite, baby face, thick thighs, wide hips, nsfw, nude, nipples, cleavage, deep v neck, underwear, see-through, wet clothes",
+      "note": "成年角色 + 场景已写全，选中即可生成；想换人就用左侧「角色卡」插入/替换正向，或用「插入并出图」一键出角色图。",
+      "group": "illust"
+    },
+    "stage3_illustrious": {
+      "stage": 3,
+      "title": "插画 · Illustrious（SDXL + LoRA）",
+      "group": "illust",
+      "params_key": "anima_base",
+      "workflow": "illustrious-lora.json",
+      "width": 1024,
+      "height": 1536,
+      "seed": 993003,
+      "placeholders": [],
+      "positive": "zzAzusa, pink eyes, purple eyes, white hair, hair between eyes, long hair, yellow halo, purple flower, hair ornament, hair flower, long sleeves, white wings, low wings, angel wings, mature female, adult woman, tall, slender, long legs, white cropped jacket, black short skirt, pleated skirt, black sailor collar, yellow neckerchief, black footwear, 1girl, solo, standing, full body, looking at viewer, gentle smile, classroom, window, afternoon light, depth of field",
+      "negative": "bad quality, worst quality, worst detail, sketch, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, extra limbs, long dress, gown, ball gown, frilled dress, frills, layer skirt, child, loli, chibi, petite, ",
+      "note": "白洲梓专用（第二轮调好）：IXL LoRA 0.9 + 1024×1536 + dpmpp_2m karras。kit line 必须留 zzAzusa 开头那一串，负向压 long dress/gown，体型加了成年词。"
+    },
+    "stage3_azusa_uniform": {
+      "stage": 3,
+      "title": "白洲梓 · 默认制服",
+      "group": "azusa",
+      "params_key": "anima_base",
+      "workflow": "illustrious-lora.json",
+      "width": 1024,
+      "height": 1536,
+      "seed": 993003,
+      "placeholders": [],
+      "positive": "zzAzusa, pink eyes, purple eyes, white hair, hair between eyes, long hair, yellow halo, purple flower, hair ornament, hair flower, long sleeves, white wings, low wings, angel wings, mature female, adult woman, tall, slender, long legs, white cropped jacket, black short skirt, pleated skirt, black sailor collar, yellow neckerchief, black footwear, 1girl, solo, standing, full body, looking at viewer, gentle smile, classroom, window, afternoon light, depth of field",
+      "negative": "bad quality, worst quality, worst detail, sketch, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, extra limbs, long dress, gown, ball gown, frilled dress, frills, layer skirt, child, loli, chibi, petite, nsfw, nude, nipples, cleavage, multiple girls, 2girls, twins, clone, duplicate, ",
+      "note": "白洲梓专用（Illustrious 线）：工作流里已烤 IXL 版 LoRA @0.9，zzAzusa 触发词 + kit line 必须留。换装只改衣服那段，发色/瞳色/光环/翅膀那串别动。"
+    },
+    "stage3_azusa_swim": {
+      "stage": 3,
+      "title": "白洲梓 · 连体泳装",
+      "group": "azusa",
+      "params_key": "anima_base",
+      "workflow": "illustrious-lora.json",
+      "width": 1024,
+      "height": 1536,
+      "seed": 994121,
+      "placeholders": [],
+      "positive": "zzAzusa, pink eyes, purple eyes, white hair, hair between eyes, long hair, yellow halo, purple flower, hair ornament, hair flower, long sleeves, white wings, low wings, angel wings, mature female, adult woman, tall, slender, long legs, white rash guard, long sleeves, half zip, white swim shorts, straw hat, barefoot, 1girl, solo, standing, full body, arms at side, looking at viewer, gentle smile, beach, ocean, blue sky, clouds, sunlight, lens flare, depth of field",
+      "negative": "bad quality, worst quality, worst detail, sketch, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, extra limbs, long dress, gown, ball gown, frilled dress, frills, layer skirt, child, loli, chibi, petite, nsfw, nude, nipples, cleavage, bikini, string bikini, micro bikini, multiple girls, 2girls, twins, clone, duplicate, tight swimsuit, wet, see-through, cameltoe, ass focus, breasts, cleavage, bikini, tight swimsuit, one-piece swimsuit, leotard, highleg, wet, see-through, ",
+      "note": "白洲梓专用（Illustrious 线）：工作流里已烤 IXL 版 LoRA @0.9，zzAzusa 触发词 + kit line 必须留。换装只改衣服那段，发色/瞳色/光环/翅膀那串别动。"
+    },
+    "stage3_azusa_racing": {
+      "stage": 3,
+      "title": "白洲梓 · 赛车女郎",
+      "group": "azusa",
+      "params_key": "anima_base",
+      "workflow": "illustrious-lora.json",
+      "width": 1024,
+      "height": 1536,
+      "seed": 994112,
+      "placeholders": [],
+      "positive": "zzAzusa, pink eyes, purple eyes, white hair, hair between eyes, long hair, yellow halo, purple flower, hair ornament, hair flower, long sleeves, white wings, low wings, angel wings, mature female, adult woman, tall, slender, long legs, race queen, sunglasses on head, ponytail, red jacket, open jacket, black bandeau, red pleated skirt, midriff, black thighhighs, 1girl, solo, standing, full body, looking at viewer, gentle smile, race track, starting grid, sponsor banners, daylight, depth of field",
+      "negative": "bad quality, worst quality, worst detail, sketch, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, extra limbs, long dress, gown, ball gown, frilled dress, frills, layer skirt, child, loli, chibi, petite, nsfw, nude, nipples, cleavage, multiple girls, 2girls, twins, clone, duplicate, ",
+      "note": "白洲梓专用（Illustrious 线）：工作流里已烤 IXL 版 LoRA @0.9，zzAzusa 触发词 + kit line 必须留。换装只改衣服那段，发色/瞳色/光环/翅膀那串别动。"
+    },
+    "stage3_azusa_casual": {
+      "stage": 3,
+      "title": "白洲梓 · 夏日私服",
+      "group": "azusa",
+      "params_key": "anima_base",
+      "workflow": "illustrious-lora.json",
+      "width": 1024,
+      "height": 1536,
+      "seed": 994103,
+      "placeholders": [],
+      "positive": "zzAzusa, pink eyes, purple eyes, white hair, hair between eyes, long hair, yellow halo, purple flower, hair ornament, hair flower, long sleeves, white wings, low wings, angel wings, mature female, adult woman, tall, slender, long legs, white sundress, straw hat, sandals, shoulder bag, 1girl, solo, standing, full body, looking at viewer, gentle smile, seaside town street, blue sky, summer, depth of field",
+      "negative": "bad quality, worst quality, worst detail, sketch, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, extra limbs, long dress, gown, ball gown, frilled dress, frills, layer skirt, child, loli, chibi, petite, nsfw, nude, nipples, cleavage, multiple girls, 2girls, twins, clone, duplicate, ",
+      "note": "白洲梓专用（Illustrious 线）：工作流里已烤 IXL 版 LoRA @0.9，zzAzusa 触发词 + kit line 必须留。换装只改衣服那段，发色/瞳色/光环/翅膀那串别动。"
+    }
+  },
+  "groups": {
+    "illust": "插画",
+    "swim": "泳装",
+    "char": "角色设定",
+    "panel": "漫画分格",
+    "loratest": "LoRA 测试",
+    "azusa": "白洲梓"
+  }
+}

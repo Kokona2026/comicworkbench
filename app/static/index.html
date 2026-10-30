@@ -1,0 +1,4427 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>漫画与插画工作台</title>
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0a0d13">
+<link rel="icon" href="/studio.ico" sizes="any">
+<script>
+  // Theme before first paint: a flash of the wrong palette is the one thing a
+  // local console must never do on every reload.
+  (() => {
+    try {
+      // ?theme=dark|light wins over the OS preference so a screenshot, a kiosk
+      // shortcut or a demo can pin one palette.
+      const forced = new URLSearchParams(location.search).get("theme");
+      const saved = forced || localStorage.getItem("studio.theme");
+      const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme =
+        (saved === "dark" || saved === "light") ? saved : (dark ? "dark" : "light");
+    } catch (_) { /* private mode: dark is the shipped default */ }
+  })();
+</script>
+<style>
+  /* ---------------------------------------------------------------- tokens */
+  :root{
+    --font: -apple-system, "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI",
+            "Microsoft YaHei", system-ui, sans-serif;
+    --mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+    --accent-rgb: 91,140,255;
+    --accent: rgb(var(--accent-rgb));
+    --accent-2: #8b5cf6;
+    --ok: #3fb950; --warn: #e0a33b; --bad: #f0616d; --info: #4cc2ff;
+    --r-xl: 18px; --r-lg: 14px; --r: 11px; --r-sm: 8px;
+    --page-max: 1240px; --page-pad: 24px;
+    --dur: .18s; --ease: cubic-bezier(.22,.61,.36,1);
+  }
+  [data-theme="dark"]{
+    --bg: #0a0d13; --bg-2: #0c1119;
+    --panel: rgba(21,27,38,.78); --panel-solid: #141b26; --panel-2: #1a2231;
+    --line: rgba(255,255,255,.075); --line-2: rgba(255,255,255,.14);
+    --fg: #e9eef7; --fg-dim: #9aa7bd; --fg-mute: #6a778f;
+    --input: #0a0f17; --code: #070b11;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 18px 40px -24px rgba(0,0,0,.9);
+    --glow-a: rgba(91,140,255,.16); --glow-b: rgba(139,92,246,.13);
+    --tile: #0e141d;
+  }
+  [data-theme="light"]{
+    --bg: #f5f7fc; --bg-2: #eef2f9;
+    --panel: rgba(255,255,255,.92); --panel-solid: #ffffff; --panel-2: #f2f5fb;
+    --line: rgba(17,26,44,.1); --line-2: rgba(17,26,44,.2);
+    --fg: #131a28; --fg-dim: #4c5a72; --fg-mute: #77839a;
+    --input: #ffffff; --code: #f7f9fd;
+    --shadow: 0 1px 2px rgba(17,26,44,.06), 0 18px 40px -28px rgba(17,26,44,.35);
+    --glow-a: rgba(91,140,255,.2); --glow-b: rgba(139,92,246,.14);
+    --tile: #eef2f9;
+  }
+
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{min-height:100%}
+  body{
+    margin:0; color:var(--fg); font:14px/1.6 var(--font);
+    background:
+      radial-gradient(1100px 520px at 88% -12%, var(--glow-a), transparent 62%),
+      radial-gradient(820px 460px at -8% 4%, var(--glow-b), transparent 58%),
+      var(--bg);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3{margin:0; font-weight:650; letter-spacing:.01em}
+  button{font:inherit; color:inherit; background:none; border:0; cursor:pointer}
+  a{color:var(--accent); text-decoration:none}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+  .mono{font-family:var(--mono)}
+  .tiny{font-size:12px}
+  .muted{color:var(--fg-dim)}
+  .faint{color:var(--fg-mute)}
+  .grow{flex:1}
+  .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+  /* ---------------------------------------------------------------- appbar */
+  .appbar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; gap:16px;
+    padding:10px max(var(--page-pad), calc((100% - var(--page-max)) / 2 + var(--page-pad)));
+    background:var(--bg);
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(14px) saturate(120%);
+  }
+  .brand{display:flex; align-items:center; gap:11px; min-width:0}
+  .brand .mark{width:30px; height:30px; flex:none; border-radius:9px; box-shadow:0 6px 18px -8px rgba(91,140,255,.9)}
+  .brand-text{display:flex; flex-direction:column; line-height:1.2; min-width:0}
+  .brand-text b{font-size:14.5px; font-weight:650; white-space:nowrap}
+  .brand-text span{font-size:11.5px; color:var(--fg-mute); white-space:nowrap}
+  .tabs{
+    display:flex; gap:3px; padding:3px; border:1px solid var(--line);
+    border-radius:12px; background:var(--panel);
+  }
+  .tabs button{
+    padding:7px 15px; border-radius:9px; font-size:13px; color:var(--fg-dim);
+    transition:color var(--dur) var(--ease), background var(--dur) var(--ease);
+    white-space:nowrap;
+  }
+  .tabs button:hover{color:var(--fg)}
+  .tabs button[aria-selected="true"]{
+    color:var(--fg); font-weight:600;
+    background:linear-gradient(180deg, rgba(var(--accent-rgb),.24), rgba(var(--accent-rgb),.1));
+    box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.42);
+  }
+  .appstatus{display:flex; align-items:center; gap:8px}
+  .chip{
+    display:inline-flex; align-items:center; gap:7px; height:30px; padding:0 11px;
+    border:1px solid var(--line); border-radius:999px; background:var(--panel);
+    font-size:12px; color:var(--fg-dim); white-space:nowrap;
+  }
+  .chip .dot{width:7px; height:7px; border-radius:50%; background:var(--fg-mute); flex:none}
+  .chip[data-state="ok"] .dot{background:var(--ok); box-shadow:0 0 0 3px rgba(63,185,80,.16)}
+  .chip[data-state="warn"] .dot{background:var(--warn); box-shadow:0 0 0 3px rgba(224,163,59,.16)}
+  .chip[data-state="bad"] .dot{background:var(--bad); box-shadow:0 0 0 3px rgba(240,97,109,.16)}
+  .chip b{font-weight:600; color:var(--fg)}
+  button.chip{cursor:pointer}
+  button.chip:hover{border-color:var(--line-2); color:var(--fg)}
+  .clock{font-size:12px; color:var(--fg-mute); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .icon-btn{
+    width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:9px; background:var(--panel);
+    color:var(--fg-dim); transition:color var(--dur), border-color var(--dur);
+  }
+  .icon-btn:hover{color:var(--fg); border-color:var(--line-2)}
+  .icon-btn svg{width:16px; height:16px}
+  [data-theme="dark"] .icon-sun{display:none}
+  [data-theme="light"] .icon-moon{display:none}
+
+  /* ---------------------------------------------------------------- layout */
+  main{
+    max-width:var(--page-max); margin:0 auto;
+    /* box-sizing:border-box means padding is part of max-width. The old
+       'padding = (100% - 1240px)/2' trick ate the content on wide screens:
+       at 1920 the grid was left with 560px and every box looked narrow. */
+    padding:20px var(--page-pad) 120px;
+  }
+  .view{display:flex; flex-direction:column; gap:16px; animation:view-in .24s var(--ease)}
+  .view[hidden]{display:none}
+  @keyframes view-in{from{opacity:0; transform:translateY(4px)}to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    .view{animation:none} * {scroll-behavior:auto !important}
+  }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg);
+    padding:16px 18px; box-shadow:var(--shadow); backdrop-filter:blur(6px);
+  }
+  .panel-head{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap}
+  .panel-title{
+    font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--fg-dim);
+  }
+  .panel-title .count{font-weight:500; color:var(--fg-mute); margin-left:6px; letter-spacing:0}
+
+  /* ---------------------------------------------------------------- buttons */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    height:34px; padding:0 14px; border-radius:10px; font-size:13px;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--fg);
+    transition:border-color var(--dur) var(--ease), background var(--dur) var(--ease),
+               transform var(--dur) var(--ease);
+    white-space:nowrap;
+  }
+  .btn:hover:not(:disabled){border-color:var(--line-2); background:var(--panel-solid)}
+  .btn:active:not(:disabled){transform:translateY(1px)}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn.primary{
+    background:linear-gradient(180deg, rgb(var(--accent-rgb)), #4b76e0);
+    border-color:transparent; color:#08101d; font-weight:650;
+    box-shadow:0 8px 22px -12px rgba(var(--accent-rgb),.95);
+  }
+  .btn.primary:hover:not(:disabled){filter:brightness(1.07)}
+  .btn.ghost{background:transparent}
+  .btn.sm{height:29px; padding:0 11px; font-size:12px; border-radius:8px}
+  .link{
+    font-size:12px; color:var(--accent); padding:2px 0; border-radius:4px;
+  }
+  .link:hover{text-decoration:underline}
+  .link.danger{color:var(--bad)}
+  .row{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .row.tight{gap:6px}
+
+  .pill{
+    display:inline-flex; align-items:center; gap:5px; padding:2px 9px; border-radius:999px;
+    font-size:11.5px; font-weight:600; white-space:nowrap;
+  }
+  .pill.ok{background:rgba(63,185,80,.13); color:var(--ok)}
+  .pill.warn{background:rgba(224,163,59,.14); color:var(--warn)}
+  .pill.bad{background:rgba(240,97,109,.14); color:var(--bad)}
+  .pill.mute{background:rgba(140,152,175,.14); color:var(--fg-dim)}
+  .pill.pause{background:rgba(76,194,255,.13); color:var(--info)}
+
+  /* ---------------------------------------------------------------- hero */
+  .hero{
+    position:relative; overflow:hidden; padding:24px 26px 22px;
+    border-radius:var(--r-xl); border:1px solid var(--line);
+    background:
+      radial-gradient(720px 280px at 100% 0%, rgba(var(--accent-rgb),.16), transparent 60%),
+      var(--panel);
+    box-shadow:var(--shadow);
+  }
+  .hero::before{
+    content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--fg-mute);
+  }
+  .hero[data-tone="ok"]::before{background:var(--ok)}
+  .hero[data-tone="warn"]::before{background:var(--warn)}
+  .hero[data-tone="bad"]::before{background:var(--bad)}
+  .hero h1{font-size:23px; line-height:1.35; margin-bottom:7px}
+  .hero p{margin:0; color:var(--fg-dim); max-width:72ch}
+  .hero .acts{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px}
+  .hero pre.hintbox{
+    margin:14px 0 0; padding:12px 14px; border-radius:var(--r);
+    background:var(--code); border:1px solid var(--line); color:var(--fg-dim);
+    font:12.5px/1.65 var(--mono); white-space:pre-wrap; word-break:break-word;
+  }
+  .hero .tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:12px}
+
+  /* ---------------------------------------------------------------- metrics */
+  .metrics{display:grid; grid-template-columns:repeat(auto-fit,minmax(212px,1fr)); gap:12px}
+  .metric{
+    padding:14px 16px; border:1px solid var(--line); border-radius:var(--r);
+    background:var(--panel); box-shadow:var(--shadow);
+  }
+  .metric .k{font-size:11.5px; color:var(--fg-mute); letter-spacing:.04em}
+  .metric .v{
+    font-size:19px; font-weight:650; margin-top:3px; font-variant-numeric:tabular-nums;
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+  }
+  .metric .s{font-size:12px; color:var(--fg-dim); margin-top:5px; word-break:break-word}
+  .meter{height:4px; border-radius:99px; background:var(--line); overflow:hidden; margin-top:9px}
+  .meter i{display:block; height:100%; border-radius:99px;
+    background:linear-gradient(90deg, var(--accent), var(--accent-2))}
+
+  /* ---------------------------------------------------------------- todo */
+  .todos{display:flex; flex-direction:column; gap:8px}
+  .todo{
+    display:grid; grid-template-columns:26px minmax(0,1fr) auto; gap:12px;
+    align-items:center; padding:11px 13px; border:1px solid var(--line);
+    border-radius:var(--r); background:var(--panel-solid);
+  }
+  .todo .n{
+    width:22px; height:22px; border-radius:7px; display:grid; place-items:center;
+    font-size:11.5px; font-weight:700; color:var(--accent);
+    background:rgba(var(--accent-rgb),.12);
+  }
+  .todo .t{font-weight:600; font-size:13.5px}
+  .todo .d{font-size:12px; color:var(--fg-dim); word-break:break-word}
+
+  /* ---------------------------------------------------------------- stepper */
+  .stepper{
+    display:grid; grid-auto-flow:column; grid-auto-columns:minmax(158px,1fr);
+    gap:9px; overflow-x:auto; padding-bottom:2px;
+  }
+  .step{
+    position:relative; text-align:left; padding:11px 12px 10px; border-radius:var(--r);
+    border:1px solid var(--line); background:var(--panel-solid);
+    transition:border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .step:hover{border-color:var(--line-2)}
+  .step[aria-pressed="true"]{border-color:rgba(var(--accent-rgb),.55);
+    box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.2)}
+  .step::before{content:""; position:absolute; inset:0 auto 0 0; width:3px;
+    border-radius:var(--r) 0 0 var(--r); background:var(--line-2)}
+  .step.pass::before{background:var(--ok)}
+  .step.warn::before{background:var(--warn)}
+  .step.fail::before{background:var(--bad)}
+  .step.pending::before{background:var(--line-2)}
+  .step.paused{opacity:.72}
+  .step .n{font-size:11px; color:var(--fg-mute); letter-spacing:.04em}
+  .step .t{font-size:13px; font-weight:600; margin:2px 0 7px; line-height:1.35}
+  .step .meta{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .step-detail{margin-top:14px; border-top:1px solid var(--line); padding-top:10px}
+  .check{
+    display:grid; grid-template-columns:18px minmax(0,1fr) auto; gap:9px;
+    padding:6px 0; font-size:13px; border-bottom:1px dashed var(--line);
+  }
+  .check:last-child{border-bottom:0}
+  .check .ic{text-align:center; width:18px}
+  .check.ok .ic{color:var(--ok)}
+  .check.no .ic{color:var(--bad)}
+  .check .d{color:var(--fg-mute); text-align:right; max-width:56%; word-break:break-word}
+  .stage-note{
+    margin-top:10px; padding:9px 12px; border-radius:var(--r-sm);
+    border:1px dashed rgba(76,194,255,.35); color:var(--fg-dim); font-size:12.5px;
+    background:rgba(76,194,255,.06);
+  }
+
+  /* ---------------------------------------------------------------- forms */
+  label{font-size:12px; color:var(--fg-mute); display:block; margin-bottom:4px}
+  input[type="text"], input[type="number"], select, textarea{
+    width:100%; background:var(--input); color:var(--fg);
+    border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:8px 10px; font:13px/1.5 var(--font);
+    transition:border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  textarea{font-family:var(--mono); font-size:12.5px; line-height:1.65; resize:vertical}
+  /* Sizing contract:
+     - prompt boxes keep the height you drag to (persisted per id)
+     - short field boxes grow with their content, then scroll
+     - every box scrolls once it hits its cap instead of stretching the panel */
+  textarea{overflow:auto; min-height:34px; scrollbar-width:thin;
+           scrollbar-color:var(--line-2) transparent}
+  textarea::-webkit-scrollbar{width:10px; height:10px}
+  textarea::-webkit-scrollbar-track{background:transparent}
+  textarea::-webkit-scrollbar-thumb{
+    background:var(--line-2); border:2px solid transparent; background-clip:content-box;
+    border-radius:6px;
+  }
+  textarea:hover::-webkit-scrollbar-thumb{background:var(--fg-mute); background-clip:content-box}
+  #pos{height:190px; min-height:110px; max-height:62vh}
+  #neg{height:96px; min-height:64px; max-height:62vh}
+  .fields textarea{
+    font-family:var(--font); font-size:12.5px; line-height:1.45;
+    min-height:34px; max-height:118px; padding:7px 9px; resize:none;
+  }
+  .ta-wrap{position:relative}
+  .ta-wrap::after{
+    content:""; position:absolute; right:6px; bottom:6px; width:8px; height:8px;
+    border-right:2px solid var(--fg-mute); border-bottom:2px solid var(--fg-mute);
+    border-radius:0 0 2px 0; opacity:.5; pointer-events:none;
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:none; border-color:rgba(var(--accent-rgb),.65);
+    box-shadow:0 0 0 3px rgba(var(--accent-rgb),.14);
+  }
+  .fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:9px}
+  .field{min-width:0}
+  .field-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  details.bible-sec{
+    border:1px solid var(--line); border-radius:var(--r); background:var(--panel-solid);
+    margin-top:14px; overflow:hidden;
+  }
+  details.bible-sec>summary{
+    list-style:none; display:flex; align-items:center; gap:8px; padding:10px 12px;
+    cursor:pointer; font-size:13px; font-weight:600;
+  }
+  details.bible-sec>summary::-webkit-details-marker{display:none}
+  details.bible-sec>summary::before{
+    content:"▸"; color:var(--fg-mute); transition:transform var(--dur) var(--ease);
+  }
+  details.bible-sec[open]>summary::before{transform:rotate(90deg)}
+  details.bible-sec .body{padding:0 12px 12px; display:flex; flex-direction:column; gap:9px}
+  .palette{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px}
+  .palette .field label{display:flex; align-items:center; gap:6px; margin-bottom:4px}
+  .palette input[type="color"]{
+    width:100%; height:30px; padding:2px; border:1px solid var(--line);
+    border-radius:7px; background:var(--input); cursor:pointer;
+  }
+  .hint{font-size:12px; color:var(--fg-mute); margin:8px 0 12px; line-height:1.6}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chipbtn{
+    height:28px; padding:0 11px; border-radius:999px; border:1px solid var(--line);
+    font-size:12px; color:var(--fg-dim); background:var(--panel);
+    transition:border-color var(--dur), color var(--dur), background var(--dur);
+  }
+  .chipbtn:hover{color:var(--fg); border-color:var(--line-2)}
+  .chipbtn[aria-pressed="true"]{
+    color:var(--fg); border-color:rgba(var(--accent-rgb),.5);
+    background:rgba(var(--accent-rgb),.12);
+  }
+
+  /* ---------------------------------------------------------------- studio */
+  .studio{display:grid; grid-template-columns:minmax(320px,424px) minmax(0,1fr); gap:16px; align-items:start}
+  @media (min-width:1081px){ .studio > .panel{position:sticky; top:74px} }
+  .stack{display:flex; flex-direction:column; gap:16px; min-width:0}
+  .opts{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-top:12px}
+  @media (max-width:560px){ .opts{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .presets{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:2px}
+  .gen-status{font-size:12px; color:var(--fg-dim); margin-top:10px; min-height:18px}
+  .progress{margin-top:10px}
+  .progress .track{height:5px; border-radius:99px; background:var(--line); overflow:hidden}
+  .progress .track i{
+    display:block; height:100%; width:38%; border-radius:99px;
+    background:linear-gradient(90deg, var(--accent), var(--accent-2));
+    animation:sweep 1.15s var(--ease) infinite;
+  }
+  @keyframes sweep{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}
+  @media (prefers-reduced-motion:reduce){.progress .track i{animation:none; width:100%; opacity:.6}}
+  .err{
+    margin-top:10px; padding:9px 12px; border-radius:var(--r-sm);
+    border:1px solid rgba(240,97,109,.35); background:rgba(240,97,109,.08);
+    color:var(--bad); font-size:12.5px; white-space:pre-wrap; word-break:break-word;
+  }
+  .note-line{margin-top:10px; font-size:12px; color:var(--fg-mute)}
+  .note-line.warn{color:var(--warn)}
+
+  /* ---------------------------------------------------------------- media */
+  .shots{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:11px; margin-top:14px}
+  .shots:empty{margin-top:0}
+  .shot, .tile{
+    position:relative; margin:0; border:1px solid var(--line); border-radius:var(--r);
+    overflow:hidden; background:var(--tile);
+  }
+  .shot img, .tile img{
+    display:block; width:100%; aspect-ratio:1; object-fit:cover; cursor:zoom-in;
+    transition:transform .35s var(--ease);
+  }
+  .shot:hover img, .tile:hover img{transform:scale(1.035)}
+  .shot figcaption, .tile figcaption{
+    display:flex; flex-direction:column; gap:2px; padding:8px 10px 9px;
+    font-size:11.5px; color:var(--fg-dim); background:var(--panel-solid);
+    border-top:1px solid var(--line);
+  }
+  .shot figcaption .name, .tile figcaption .name{
+    color:var(--fg); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .shot .ops{display:flex; gap:10px; flex-wrap:wrap; margin-top:4px}
+  .tile-ops{
+    position:absolute; inset:auto 0 0 0; display:flex; gap:6px; justify-content:flex-end;
+    padding:8px; opacity:0; transition:opacity var(--dur) var(--ease);
+    background:linear-gradient(0deg, rgba(0,0,0,.62), transparent);
+  }
+  .tile:hover .tile-ops, .tile:focus-within .tile-ops{opacity:1}
+  .tile .chipbtn{height:26px; font-size:11.5px; background:rgba(12,17,26,.78); color:#eaf0fa;
+    border-color:rgba(255,255,255,.2)}
+  .tile .chipbtn:hover{background:rgba(12,17,26,.92)}
+  .tile.broken img, .shot.broken img{opacity:.25}
+  .tile.broken::after, .shot.broken::after{
+    content:"图片已失效"; position:absolute; inset:0; display:grid; place-items:center;
+    font-size:12px; color:var(--fg-mute);
+  }
+  .empty{
+    padding:26px 16px; text-align:center; color:var(--fg-mute); font-size:13px;
+    border:1px dashed var(--line-2); border-radius:var(--r); background:var(--panel-solid);
+  }
+  .empty b{color:var(--fg-dim); display:block; margin-bottom:4px; font-size:13.5px}
+
+  /* ---------------------------------------------------------------- health */
+  .health-top{display:grid; grid-template-columns:minmax(0,300px) minmax(0,1fr); gap:16px; align-items:start}
+  .score-wrap{display:flex; flex-direction:column; align-items:center; gap:10px; padding:4px 0}
+  .ring{width:150px; height:150px; position:relative}
+  .ring svg{width:100%; height:100%; transform:rotate(-90deg)}
+  .ring .bg{fill:none; stroke:var(--line); stroke-width:9}
+  .ring .fg{fill:none; stroke:var(--ok); stroke-width:9; stroke-linecap:round;
+    transition:stroke-dashoffset .6s var(--ease), stroke .3s}
+  .ring .mid{
+    position:absolute; inset:0; display:grid; place-content:center; text-align:center;
+  }
+  .ring .mid b{font-size:31px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums}
+  .ring .mid span{font-size:11.5px; color:var(--fg-mute); display:block; margin-top:3px}
+  .score-stats{display:flex; gap:14px; font-size:12px; color:var(--fg-dim); flex-wrap:wrap; justify-content:center}
+  .score-stats b{color:var(--fg); font-variant-numeric:tabular-nums}
+  .findings{display:flex; flex-direction:column}
+  .finding{
+    display:grid; grid-template-columns:20px minmax(0,1fr) auto; gap:10px;
+    padding:10px 0; border-bottom:1px solid var(--line); align-items:start;
+  }
+  .finding:last-child{border-bottom:0}
+  .finding .ic{width:20px; height:20px; border-radius:6px; display:grid; place-items:center;
+    font-size:11px; font-weight:700}
+  .finding.ok .ic{background:rgba(63,185,80,.14); color:var(--ok)}
+  .finding.warn .ic{background:rgba(224,163,59,.16); color:var(--warn)}
+  .finding.fail .ic{background:rgba(240,97,109,.16); color:var(--bad)}
+  .finding .ttl{font-size:13px; font-weight:600}
+  .finding .meta{font-size:11.5px; color:var(--fg-mute); margin-top:2px}
+  .finding .ev{font-size:12px; color:var(--fg-dim); margin-top:3px; word-break:break-word}
+  .finding .rec{font-size:12px; color:var(--accent); margin-top:3px; word-break:break-word}
+  table{width:100%; border-collapse:collapse; font-size:12.5px}
+  th,td{padding:8px 9px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top}
+  th{font-size:11.5px; color:var(--fg-mute); font-weight:600; letter-spacing:.04em}
+  tr:last-child td{border-bottom:0}
+  details.panel{padding:0; overflow:hidden}
+  details.panel>summary{
+    list-style:none; display:flex; align-items:center; gap:9px; cursor:pointer;
+    padding:14px 18px; font-size:13px; font-weight:600;
+  }
+  details.panel>summary::-webkit-details-marker{display:none}
+  details.panel>summary::before{
+    content:"▸"; color:var(--fg-mute); transition:transform var(--dur) var(--ease);
+  }
+  details.panel[open]>summary::before{transform:rotate(90deg)}
+  details.panel .body{padding:0 18px 16px; display:flex; flex-direction:column; gap:10px}
+  pre.log{
+    margin:0; height:42vh; overflow:auto; padding:12px 14px; border-radius:var(--r);
+    background:var(--code); border:1px solid var(--line); color:var(--fg-dim);
+    font:12px/1.6 var(--mono); white-space:pre-wrap; word-break:break-word;
+  }
+
+  /* ---------------------------------------------------------------- models */
+  .model-list{display:flex; flex-direction:column; gap:8px}
+  .model-row{
+    display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 14px;
+    padding:12px 14px; border:1px solid var(--line); border-radius:var(--r);
+    background:var(--panel-solid); align-items:center;
+  }
+  .model-row[data-loaded="1"]{border-color:rgba(63,185,80,.38)}
+  .model-name{font-size:13.5px; font-weight:600; display:flex; align-items:center;
+    gap:8px; flex-wrap:wrap; word-break:break-all}
+  .model-row .pill{font-size:11px}
+  .model-meta{font-size:12px; color:var(--fg-mute); margin-top:4px;
+    display:flex; gap:12px; flex-wrap:wrap}
+  .model-actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+  .fixrow{display:flex; align-items:center; gap:8px; margin-top:7px; flex-wrap:wrap}
+  .fixrow .tiny{color:var(--fg-mute)}
+
+  /* ---------------------------------------------------------------- taskbar */
+  .task{
+    position:fixed; left:50%; translate:-50% 0; bottom:16px; z-index:50;
+    width:min(880px, calc(100% - 32px)); display:none;
+    background:var(--panel-solid); border:1px solid var(--line); border-radius:var(--r-lg);
+    box-shadow:0 22px 60px -18px rgba(0,0,0,.7); overflow:hidden;
+  }
+  .task[data-show="1"]{display:block}
+  .task[data-tone="ok"]{border-color:rgba(63,185,80,.45)}
+  .task[data-tone="bad"]{border-color:rgba(240,97,109,.45)}
+  .task .bar{display:flex; align-items:center; gap:10px; padding:10px 14px}
+  .task .dot{width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none}
+  .task[data-busy="1"] .dot{animation:blink 1.05s ease-in-out infinite}
+  .task[data-tone="ok"] .dot{background:var(--ok)}
+  .task[data-tone="bad"] .dot{background:var(--bad)}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+  @media (prefers-reduced-motion:reduce){.task[data-busy="1"] .dot{animation:none}}
+  .task .label{font-size:13px; font-weight:600}
+  .task .meta{font-size:12px; color:var(--fg-mute); font-variant-numeric:tabular-nums}
+  .task pre{
+    margin:0; padding:0 14px 12px; max-height:230px; overflow:auto;
+    font:12px/1.6 var(--mono); color:var(--fg-dim); white-space:pre-wrap; word-break:break-word;
+  }
+
+  /* ---------------------------------------------------------------- toast */
+  .toasts{
+    position:fixed; top:64px; right:18px; z-index:70; display:flex;
+    flex-direction:column; gap:8px; max-width:min(360px, calc(100% - 36px));
+  }
+  .toast{
+    padding:10px 13px; border-radius:var(--r); border:1px solid var(--line-2);
+    background:var(--panel-solid); box-shadow:var(--shadow); font-size:12.5px;
+    animation:toast-in .2s var(--ease); word-break:break-word;
+  }
+  .toast[data-tone="ok"]{border-color:rgba(63,185,80,.45)}
+  .toast[data-tone="bad"]{border-color:rgba(240,97,109,.45)}
+  .toast[data-tone="warn"]{border-color:rgba(224,163,59,.5)}
+  @keyframes toast-in{from{opacity:0; transform:translateY(-6px)}to{opacity:1; transform:none}}
+
+  /* ---------------------------------------------------------------- lightbox */
+  .lightbox{
+    position:fixed; inset:0; z-index:80; display:none; place-items:center;
+    background:rgba(4,7,12,.86); backdrop-filter:blur(6px); padding:28px;
+  }
+  .lightbox[data-show="1"]{display:grid}
+  .lightbox figure{margin:0; max-width:min(1200px,100%); max-height:100%; display:flex; flex-direction:column; gap:10px}
+  .lightbox img{
+    max-width:100%; max-height:calc(100vh - 150px); object-fit:contain;
+    border-radius:var(--r); border:1px solid rgba(255,255,255,.12);
+    background:#05080d; margin:0 auto;
+  }
+  .lightbox figcaption{display:flex; align-items:center; gap:10px; color:#d7e2f3; font-size:12.5px}
+  .lightbox .lb-close{position:fixed; top:18px; right:20px}
+  .lightbox .lb-nav{position:fixed; top:50%; translate:0 -50%; width:40px; height:56px;
+    border-radius:10px; background:rgba(255,255,255,.08); color:#fff; display:grid; place-items:center}
+  .lightbox .lb-nav:hover{background:rgba(255,255,255,.16)}
+  .lightbox .lb-prev{left:14px}
+  .lightbox .lb-next{right:14px}
+
+  /* ---------------------------------------------------------------- fatal */
+  .fatal{
+    margin:0 0 12px; padding:11px 14px; border-radius:var(--r);
+    border:1px solid rgba(240,97,109,.4); background:rgba(240,97,109,.1);
+    color:var(--bad); font-size:12.5px; white-space:pre-wrap;
+  }
+
+  /* ---------------------------------------------------------------- responsive */
+  @media (max-width:1080px){
+    .studio{grid-template-columns:1fr}
+    .health-top{grid-template-columns:1fr}
+  }
+  @media (max-width:860px){
+    .appbar{flex-wrap:wrap; gap:8px 10px; padding-top:8px; padding-bottom:8px}
+    .brand{order:1; min-width:0}
+    .brand-text b{font-size:13.5px}
+    .appstatus{order:2; margin-left:auto; overflow-x:auto; width:auto}
+    .tabs{order:3; flex:1 1 100%; justify-content:stretch}
+    .tabs button{flex:1; text-align:center; padding:7px 8px}
+    .grow{display:none}
+    .brand-text span{display:none}
+    .clock{display:none}
+  }
+  @media (max-width:560px){
+    .hero{padding:20px}
+    .hero h1{font-size:20px}
+    .metrics{grid-template-columns:1fr}
+    main{padding-left:14px; padding-right:14px}
+    .appbar{padding-left:14px; padding-right:14px}
+    .toasts{top:auto; bottom:96px; right:12px; left:12px; max-width:none}
+  }
+  /* ---- 库：历史 / LoRA / 本地模型 ---- */
+  .llm-row{margin-top:10px; gap:8px; flex-wrap:wrap}
+  .llm-row input[type="text"]{flex:1 1 220px; min-width:180px}
+  .tiny-input{height:30px; padding:0 10px; border-radius:var(--r-sm);
+    background:var(--input); border:1px solid var(--line); color:var(--fg);
+    font:inherit; font-size:12.5px; width:170px}
+  .tiny-input:focus{outline:none; border-color:rgba(var(--accent-rgb),.55)}
+  .hist-list{display:flex; flex-direction:column; gap:10px; margin-top:6px;
+    max-height:min(74vh, 900px); overflow:auto; padding-right:4px}
+  .hist-row{display:flex; gap:12px; padding:10px; border-radius:var(--r);
+    border:1px solid var(--line); background:var(--panel-2); align-items:flex-start}
+  .hist-row:hover{border-color:var(--line-2)}
+  .hist-thumb{width:78px; height:114px; flex:none; border-radius:var(--r-sm);
+    overflow:hidden; background:var(--tile); border:1px solid var(--line)}
+  .hist-thumb img{width:100%; height:100%; object-fit:cover; display:block}
+  .hist-thumb.empty{display:grid; place-items:center; color:var(--fg-mute); font-size:11px}
+  .hist-main{min-width:0; flex:1; display:flex; flex-direction:column; gap:6px}
+  .hist-title{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .hist-title b{font-size:13px; font-weight:600}
+  .hist-pos{font-size:11.5px; color:var(--fg-dim); line-height:1.5; max-height:3em;
+    overflow:hidden; font-family:var(--mono); word-break:break-word}
+  .hist-meta{display:flex; gap:6px; flex-wrap:wrap; font-size:11px; color:var(--fg-mute)}
+  .hist-ops{display:flex; gap:6px; flex-wrap:wrap; margin-top:2px}
+  .tagchip{font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:999px;
+    border:1px solid var(--line); background:var(--input); color:var(--fg-dim); cursor:pointer}
+  .tagchip:hover{color:var(--fg); border-color:rgba(var(--accent-rgb),.5)}
+  .lora-list{display:flex; flex-direction:column; gap:8px; margin-top:8px}
+  .lora-row{display:flex; gap:10px; align-items:flex-start; padding:9px 10px;
+    border-radius:var(--r-sm); border:1px solid var(--line); background:var(--panel-2)}
+  .lora-row .lora-name{font-size:12.5px; font-weight:600; word-break:break-all}
+  .lora-row .lora-body{min-width:0; flex:1; display:flex; flex-direction:column; gap:5px}
+  .lora-row .lora-tags{display:flex; gap:5px; flex-wrap:wrap}
+  .lora-fam{font-size:10.5px; text-transform:uppercase; letter-spacing:.04em;
+    padding:1px 7px; border-radius:999px; background:rgba(var(--accent-rgb),.14);
+    color:var(--accent); flex:none}
+
+  /* ---- 角色卡拼装 / LoRA 叠加 ---- */
+  .card-edit{display:flex; flex-direction:column; gap:7px; margin-bottom:12px;
+    padding:9px; border-radius:var(--r-sm); border:1px dashed var(--line-2); background:var(--panel-2)}
+  .card-edit input[type="text"], .card-edit textarea{width:100%; padding:7px 9px;
+    border-radius:var(--r-sm); background:var(--input); border:1px solid var(--line);
+    color:var(--fg); font-family:var(--mono); font-size:11.5px; line-height:1.55; resize:vertical}
+  .zh-toggle{display:inline-flex; align-items:center; gap:5px; font-size:11.5px;
+    color:var(--fg-dim); cursor:pointer; user-select:none}
+  .zh-toggle input{width:13px; height:13px; accent-color:var(--accent)}
+  .card-edit textarea{min-height:56px; max-height:180px}
+  .card-edit input:focus, .card-edit textarea:focus{outline:none; border-color:rgba(var(--accent-rgb),.55)}
+  .pm-list{display:flex; flex-direction:column; gap:10px; margin:9px 0 4px; max-height:260px; overflow:auto}
+  .pm-group{display:flex; flex-direction:column; gap:5px}
+  .pm-cat{font-size:11px; color:var(--fg-mute); letter-spacing:.03em}
+  .pm-words{display:flex; gap:5px; flex-wrap:wrap}
+  .pm-zh{color:var(--fg-mute); font-family:var(--font); font-size:10.5px}
+  .pm-chip{display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11px;
+    padding:3px 4px 3px 8px; border-radius:999px; border:1px solid var(--line);
+    background:var(--input); color:var(--fg-dim); cursor:pointer}
+  .pm-chip:hover{color:var(--fg); border-color:rgba(var(--accent-rgb),.5)}
+  .pm-chip .pm-word{pointer-events:none}
+  #bible-fields input.flash, #bible-fields select.flash{
+    border-color:rgba(var(--accent-rgb),.9); box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18)}
+  .pm-chip button{border:0; background:transparent; color:var(--fg-mute); cursor:pointer;
+    font-size:13px; line-height:1; padding:0 4px}
+  .pm-chip button:hover{color:var(--bad)}
+  .pm-chip[data-editing="1"]{border-color:rgba(var(--accent-rgb),.6); background:var(--panel-2);
+    padding:2px 3px 2px 6px}
+  .pm-chip .pm-word{cursor:text}
+  .pm-input{border:0; background:transparent; color:var(--fg); font:inherit; width:170px;
+    padding:1px 2px; outline:none}
+  #bible-fields input[data-bible], #bible-fields select[data-bible]{width:100%; height:32px; padding:0 9px;
+    border-radius:var(--r-sm); background:var(--input); border:1px solid var(--line);
+    color:var(--fg); font-family:var(--mono); font-size:11.5px}
+  #bible-fields .field-head{display:flex; align-items:center; gap:8px}
+  #bible-fields .field-head label{margin:0}
+  #bible-fields .field-tools{margin-left:auto; display:flex; gap:8px}
+  #bible-fields .field-tools .link{font-size:11px}
+  /* 字段自带的下拉：不受输入框已有内容影响，列出全部词条 */
+  .combo{position:relative; display:flex; gap:4px}
+  .combo input[data-bible]{flex:1 1 auto; min-width:0}
+  .combo .caret{height:32px; width:auto; padding:0 10px; font-size:11.5px; flex:none; white-space:nowrap}
+  .combo-menu{position:absolute; z-index:40; top:calc(100% + 5px); left:0; right:0;
+    max-height:300px; overflow:auto; display:none; padding:9px;
+    background:var(--panel-solid); border:1px solid var(--line-2);
+    border-radius:var(--r); box-shadow:var(--shadow)}
+  .combo-menu[data-open="1"]{display:block}
+  .combo-menu .cm-search{width:100%; height:28px; margin-bottom:8px; padding:0 9px;
+    border-radius:var(--r-sm); background:var(--input); border:1px solid var(--line);
+    color:var(--fg); font-family:var(--mono); font-size:11.5px}
+  .combo-menu .cm-group{margin-bottom:8px}
+  .combo-menu .cm-cat{font-size:10.5px; color:var(--fg-mute); margin-bottom:4px}
+  .combo-menu .cm-items{display:flex; flex-wrap:wrap; gap:4px}
+  .cm-item{font-family:var(--font); font-size:11.5px; padding:3px 9px; border-radius:999px;
+    border:1px solid var(--line); background:var(--input); color:var(--fg-dim); cursor:pointer;
+    display:inline-flex; align-items:baseline; gap:5px}
+  .cm-item:hover{color:var(--fg); border-color:rgba(var(--accent-rgb),.55)}
+  .cm-item[data-used="1"]{opacity:.5}
+  .cm-item .cm-en{font-family:var(--mono); font-size:10px; color:var(--fg-mute)}
+  #bible-fields input[data-bible]:focus, #bible-fields select[data-bible]:focus{outline:none;
+    border-color:rgba(var(--accent-rgb),.55)}
+  .card-row{margin-bottom:12px; gap:6px; flex-wrap:wrap}
+  .card-row select{flex:1 1 180px; min-width:140px; height:32px; padding:0 8px;
+    border-radius:var(--r-sm); background:var(--input); border:1px solid var(--line);
+    color:var(--fg); font:inherit; font-size:12.5px}
+  .bible-preview-label{display:block; margin:12px 0 6px; font-size:12px; color:var(--fg-dim)}
+  /* 高度对齐右栏的 #pos（190px），两边内容一眼能对上 */
+  .bible-preview{margin:0; padding:11px 12px; border-radius:var(--r); background:var(--input);
+    border:1px solid var(--line); color:var(--fg-dim); font-family:var(--mono);
+    font-size:12.5px; line-height:1.65; white-space:pre-wrap; word-break:break-word;
+    height:190px; min-height:110px; overflow:auto}
+  .bible-sync{margin:6px 0 0; font-size:11px; color:var(--fg-mute); min-height:16px}
+  .bible-sync.ok{color:var(--ok)}
+  .lora-stack{display:flex; flex-direction:column; gap:8px; margin-top:8px}
+  .lora-stack .empty{color:var(--fg-mute); font-size:12px; padding:6px 2px}
+  .lora-row-stack{display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+    padding:7px 8px; border:1px solid var(--line); border-radius:var(--r-sm);
+    background:var(--panel-2)}
+  .lora-row-stack .lora-idx{font-family:var(--mono); font-size:11px; color:var(--fg-mute);
+    width:16px; flex:none; text-align:center}
+  .lora-row-stack select{flex:1 1 190px; min-width:140px; height:30px; padding:0 8px;
+    border-radius:var(--r-sm); background:var(--input); border:1px solid var(--line);
+    color:var(--fg); font:inherit; font-size:12px}
+  .lora-row-stack input[type="number"]{width:74px; height:30px; padding:0 8px;
+    border-radius:var(--r-sm); background:var(--input); border:1px solid var(--line);
+    color:var(--fg); font:inherit; font-size:12px}
+  .lora-row-stack .mini{height:26px; padding:0 7px; font-size:11px}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="brandmark" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#5b8cff"/><stop offset="1" stop-color="#8b5cf6"/>
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="17" fill="url(#brandmark)"/>
+      <path d="M32 9c3.2 10.6 8.2 15.6 18.8 18.8C40.2 31 35.2 36 32 46.6 28.8 36 23.8 31 13.2 27.8 23.8 24.6 28.8 19.6 32 9z"
+            fill="#fff" opacity=".95"/>
+      <circle cx="47" cy="47" r="4.2" fill="#fff" opacity=".72"/>
+    </svg>
+    <div class="brand-text">
+      <b id="brand-title">漫画与插画工作台</b>
+      <span id="brand-sub">ComfyUI · Anima · 本机</span>
+    </div>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="主导航">
+    <button role="tab" data-tab="home" aria-selected="true" aria-controls="view-home">开始</button>
+    <button role="tab" data-tab="studio" aria-selected="false" aria-controls="view-studio">创作</button>
+    <button role="tab" data-tab="library" aria-selected="false" aria-controls="view-library">库</button>
+    <button role="tab" data-tab="gallery" aria-selected="false" aria-controls="view-gallery">产出</button>
+    <button role="tab" data-tab="models" aria-selected="false" aria-controls="view-models">模型</button>
+    <button role="tab" data-tab="health" aria-selected="false" aria-controls="view-health">体检</button>
+  </nav>
+
+  <div class="grow"></div>
+
+  <div class="appstatus">
+    <span class="chip" id="chip-comfy" data-state="mute" title="ComfyUI 连接状态">
+      <i class="dot"></i><span id="chip-comfy-text">连接中…</span>
+    </span>
+    <span class="chip" id="chip-gpu" data-state="mute" title="显存占用">
+      <i class="dot"></i><span id="chip-gpu-text">显存 —</span>
+    </span>
+    <button class="chip" id="chip-queue" data-act="goto-queue" data-state="warn" hidden
+            title="ComfyUI 队列，点击查看">
+      <i class="dot"></i><span id="chip-queue-text">队列 0</span>
+    </button>
+    <span class="clock" id="clock">尚未刷新</span>
+    <button class="icon-btn" data-act="refresh" title="立即刷新（R）" aria-label="立即刷新">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+        <path d="M20 11a8 8 0 1 0-2.6 6"/><path d="M20 4v7h-7"/>
+      </svg>
+    </button>
+    <button class="icon-btn" data-act="theme" title="切换明暗主题" aria-label="切换明暗主题">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="fatal" id="fatal" hidden role="alert"></div>
+
+  <!-- ============================================================ 开始 -->
+  <section class="view" id="view-home" role="tabpanel" aria-live="polite">
+    <div class="hero" id="hero" data-tone="warn">
+      <h1 id="hero-title">正在读取环境…</h1>
+      <p id="hero-sub">控制台已启动，正在检查 ComfyUI、权重与阶段门。</p>
+      <div class="acts" id="hero-acts"></div>
+      <pre class="hintbox" id="hero-hint" hidden></pre>
+      <div class="tags" id="hero-tags"></div>
+    </div>
+
+    <div class="metrics" id="metrics"></div>
+
+    <div class="panel">
+      <div class="panel-head"><h2 class="panel-title">下一步</h2><span class="grow"></span>
+        <span class="tiny faint" id="todo-hint"></span></div>
+      <div class="todos" id="todos"><div class="empty">正在检查…</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2 class="panel-title">六阶段进度</h2><span class="grow"></span>
+        <span class="tiny faint">点击任一阶段查看逐项检查</span></div>
+      <div class="stepper" id="stepper"></div>
+      <div id="stage-detail" class="step-detail" hidden></div>
+      <div class="stage-note" id="video-note" hidden></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 创作 -->
+  <section class="view" id="view-studio" role="tabpanel" hidden>
+    <div class="studio">
+      <div class="panel">
+        <div class="panel-head"><h2 class="panel-title">模板</h2><span class="grow"></span>
+          <button class="link" data-act="tpl-scope" id="tpl-scope">按类型</button>
+          <span class="tiny faint" id="tpl-stage"></span></div>
+        <div class="presets" id="type-chips"></div>
+        <label for="tpl">提示词模板</label>
+        <select id="tpl"></select>
+        <p class="hint" id="tpl-note">选择模板后可用设定表一键填充。</p>
+        <div class="fields" id="tpl-fields"></div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn" data-act="fill-bible">用设定表填充</button>
+          <button class="btn" data-act="render">渲染提示词</button>
+        </div>
+
+        <details class="bible-sec" id="bible-sec" open>
+          <summary>角色卡<span class="pill mute" id="bible-pill" style="margin-left:auto">未加载</span></summary>
+          <div class="body">
+            <div class="row card-row">
+              <select id="card-select" title="角色卡库"></select>
+              <button class="btn primary sm" data-act="card-load">载入</button>
+              <button class="btn sm" data-act="card-save">存为卡片</button>
+              <button class="btn ghost sm" data-act="card-del">删除</button>
+              <button class="btn ghost sm" data-act="card-rename">改名</button>
+              <label class="zh-toggle" title="栏目显示中文；注入右侧提示词时仍然只写英文">
+                <input type="checkbox" id="zh-display" checked> 中文显示
+              </label>
+            </div>
+            <div class="card-edit" id="card-edit">
+              <input id="card-name" type="text" placeholder="卡片名">
+              <textarea id="card-text" rows="2" spellcheck="false"
+                        placeholder="卡片正文：插入右框的就是这段，可手改"></textarea>
+              <div class="row">
+                <button class="btn sm" data-act="card-update">保存修改</button>
+                <button class="btn ghost sm" data-act="card-rebuild">按字段重建正文</button>
+                <button class="btn ghost sm" data-act="card-new">存为新卡</button>
+              </div>
+            </div>
+            <div class="fields" id="bible-fields">
+              <p class="hint">正在读取 project/00_bible/character.json…</p>
+            </div>
+            <div class="palette" id="bible-palette"></div>
+            <label class="bible-preview-label">拼装结果</label>
+            <pre class="bible-preview" id="bible-preview"></pre>
+            <p class="bible-sync" id="bible-sync"></p>
+            <div class="row">
+              <button class="btn primary sm" data-act="bible-insert">插入到正向</button>
+              <button class="btn sm" data-act="bible-replace">替换正向</button>
+              <button class="btn ghost sm" data-act="bible-shoot">插入并出图</button>
+              <button class="btn ghost sm" data-act="save-bible">保存</button>
+              <button class="btn ghost sm" data-act="reload-bible">重新读取</button>
+            </div>
+            <p class="hint" id="bible-hint" style="margin:0"></p>
+
+            <details class="bible-sec" id="word-editor" open>
+              <summary>词条管理<span class="pill mute" id="pm-pill" style="margin-left:auto">—</span></summary>
+              <div class="body">
+                <div class="row">
+                  <select id="pm-field" title="要编辑哪个字段的候选"></select>
+                  <input id="pm-search" type="text" spellcheck="false" placeholder="搜词条（英文/中文都行）" style="max-width:170px">
+                  <input id="pm-new" type="text" spellcheck="false" placeholder="新增：英文标签 | 中文备注">
+                  <button class="btn sm" data-act="pm-add">添加</button>
+                </div>
+                <div class="pm-list" id="pm-list"></div>
+                <div class="row">
+                  <button class="btn ghost sm" data-act="pm-reset">恢复内置默认</button>
+                </div>
+                <p class="hint" style="margin:0">字段右边的「词条 ▾」就是这一栏的下拉：按分类列出全部候选，点一条只追加英文。这里的列表是全局默认，换角色卡不会变。</p>
+              </div>
+            </details>
+
+            <details class="bible-sec" id="field-editor" open>
+              <summary>字段管理<span class="pill mute" id="fe-pill" style="margin-left:auto">—</span></summary>
+              <div class="body">
+                <div class="row">
+                  <input id="fe-label" type="text" spellcheck="false" placeholder="新字段名，如：头饰 / 鞋袜 / 体型细节">
+                  <input id="fe-key" type="text" spellcheck="false" placeholder="键名（可选，英文小写）" style="max-width:150px">
+                  <button class="btn sm" data-act="fe-add">添加字段</button>
+                </div>
+                <div class="pm-list" id="fe-list"></div>
+                <p class="hint" style="margin:0">✎ 改显示名 · × 删掉这一栏（连同它的候选）；删掉后角色卡里对应内容不再进正文。</p>
+              </div>
+            </details>
+          </div>
+        </details>
+      </div>
+
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-head"><h2 class="panel-title">提示词</h2><span class="grow"></span>
+            <span class="tiny faint" id="param-tag"></span></div>
+          <div class="field ta-wrap">
+            <div class="field-head"><label for="pos">正向</label>
+              <span class="row tight">
+                <button class="link resync" data-act="resync" hidden>跟随模板</button>
+                <button class="link" data-act="copy-pos">复制</button>
+              </span></div>
+            <textarea id="pos" spellcheck="false" title="拖右下角调整高度，双击恢复默认"
+                      placeholder="点「渲染提示词」按模板生成，可直接改写。"></textarea>
+          </div>
+          <div class="field ta-wrap" style="margin-top:10px">
+            <div class="field-head"><label for="neg">负向</label>
+              <span class="row tight">
+                <button class="link resync" data-act="resync" hidden>跟随模板</button>
+                <button class="link" data-act="copy-neg">复制</button>
+              </span></div>
+            <textarea id="neg" spellcheck="false" title="拖右下角调整高度，双击恢复默认"
+                      placeholder="留空表示不启用负向提示词。"></textarea>
+          </div>
+          <div class="note-line" id="render-note">跟随模板：改字段会自动同步提示词</div>
+          <div class="row llm-row">
+            <input id="llm-brief" type="text" spellcheck="false"
+                   placeholder="一句话想法 → 交给本机 qwen3.8-27b 写成标签">
+            <button class="btn sm" data-act="llm-tags">本地扩写</button>
+            <button class="btn ghost sm" data-act="llm-polish">本地润色</button>
+            <span class="tiny faint" id="llm-state"></span>
+          </div>
+        </div>
+
+        <div class="panel" id="lora-panel">
+          <div class="panel-head"><h2 class="panel-title">LoRA 叠加</h2><span class="grow"></span>
+            <span class="tiny faint" id="lora-stack-state">跟随工作流默认</span>
+            <button class="btn ghost sm" data-act="lora-add">加一个</button>
+            <button class="btn ghost sm" data-act="lora-clear">清空</button></div>
+          <div class="lora-stack" id="lora-stack"></div>
+          <p class="hint" style="margin:8px 0 0">
+            留空＝用工作流里写死的 LoRA；填了这套链就整体替换，权重 -1–2 之间，0.4–0.8 最好用。</p>
+        </div>
+
+        <div class="panel" id="gen-panel">
+          <div class="panel-head"><h2 class="panel-title">出图</h2><span class="grow"></span>
+            <span class="tiny faint" id="gen-status"></span></div>
+          <div class="presets" id="presets"></div>
+          <details class="bible-sec" id="adv-opts">
+            <summary>高级参数<span class="pill mute" style="margin-left:auto">宽 / 高 / 步数 / CFG / 种子 / 张数</span></summary>
+            <div class="body">
+          <div class="opts">
+            <div class="field"><label for="opt-width">宽</label>
+              <input id="opt-width" type="number" min="256" max="2048" step="8" value="1024"></div>
+            <div class="field"><label for="opt-height">高</label>
+              <input id="opt-height" type="number" min="256" max="2048" step="8" value="1024"></div>
+            <div class="field"><label for="opt-steps">步数</label>
+              <input id="opt-steps" type="number" min="1" max="120"></div>
+            <div class="field"><label for="opt-cfg">CFG</label>
+              <input id="opt-cfg" type="number" min="1" max="20" step="0.1"></div>
+            <div class="field"><label for="opt-seed">种子（-1 随机）</label>
+              <input id="opt-seed" type="number" value="-1"></div>
+            <div class="field"><label for="opt-batch">张数</label>
+              <input id="opt-batch" type="number" min="1" max="4" value="1"></div>
+          </div>
+            </div>
+          </details>
+          <div class="row" style="margin-top:14px">
+            <button class="btn primary" data-act="generate" id="gen-btn">开始生成</button>
+            <button class="btn" data-act="gen-stop" id="gen-stop" hidden>中断</button>
+            <button class="btn ghost" data-act="reseed">换种子</button>
+            <button class="btn ghost" data-act="open-output">打开输出目录</button>
+            <button class="btn ghost" data-act="clear-job" id="gen-clear" hidden>清除结果</button>
+            <span class="grow"></span>
+            <span class="tiny faint" id="gen-est"></span>
+          </div>
+          <div class="note-line warn" id="gen-risk" hidden></div>
+          <div class="gen-status" id="gen-line"></div>
+          <div class="progress" id="gen-progress" hidden>
+            <div class="track"><i></i></div>
+          </div>
+          <div class="err" id="gen-error" hidden></div>
+          <div class="shots" id="gen-shots"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 产出 -->
+  <section class="view" id="view-gallery" role="tabpanel" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">产出<span class="count" id="gallery-total"></span></h2>
+        <span class="grow"></span>
+        <button class="btn ghost sm" data-act="gallery-refresh">刷新</button>
+        <button class="btn ghost sm" data-act="open-output">输出目录</button>
+        <button class="btn ghost sm" data-act="open-project">项目目录</button>
+      </div>
+      <div class="chips" id="gallery-filters"></div>
+      <div class="shots" id="gallery-grid" style="grid-template-columns:repeat(auto-fill,minmax(208px,1fr))"></div>
+      <div class="note-line" id="gallery-note"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 库 -->
+  <section class="view" id="view-library" role="tabpanel" hidden>
+    <div class="studio">
+      <div class="panel">
+        <div class="panel-head"><h2 class="panel-title">出图历史<span class="count" id="hist-count"></span></h2>
+          <span class="grow"></span>
+          <input id="hist-search" type="text" spellcheck="false" placeholder="搜模板 / 标签 / LoRA" class="tiny-input">
+          <button class="btn ghost sm" data-act="hist-refresh">刷新</button>
+          <button class="btn ghost sm" data-act="hist-clear">清空</button></div>
+        <div class="hist-list" id="hist-list"><div class="empty">正在读取…</div></div>
+      </div>
+
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-head"><h2 class="panel-title">LoRA 库<span class="count" id="lora-count"></span></h2>
+            <span class="grow"></span>
+            <button class="btn ghost sm" data-act="lora-rescan">重新扫描</button></div>
+          <div class="presets" id="lora-filters"></div>
+          <div class="lora-list" id="lora-list"><div class="empty">正在读取…</div></div>
+          <p class="hint" style="margin:10px 0 0">点触发词插入到正向提示词；触发词来自 LoRA 自带元数据，模型不认识就留空。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 模型 -->
+  <section class="view" id="view-models" role="tabpanel" hidden>
+    <div class="panel">
+      <div class="panel-head"><h2 class="panel-title">显存与推理服务</h2>
+        <span class="grow"></span>
+        <span class="tiny faint" id="models-updated"></span>
+        <button class="btn ghost sm" data-act="models-refresh">刷新</button></div>
+      <div class="metrics" id="model-metrics"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" data-act="free-vram">释放全部显存</button>
+        <button class="btn ghost" data-act="comfy-start-model">启动 ComfyUI</button>
+        <button class="btn ghost" data-act="comfy-stop-model">停止 ComfyUI</button>
+      </div>
+      <p class="hint" style="margin:10px 0 0">
+        ComfyUI 的模型随工作流自动加载；「释放全部显存」会卸载 ComfyUI 已加载模型和所有 Ollama 模型，
+        不停止服务。出图前建议先卸载本地大模型，16GB 显存要留给采样器。</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2 class="panel-title">本地大模型<span class="count" id="model-count"></span></h2>
+        <span class="grow"></span>
+        <span class="tiny faint" id="ollama-status"></span>
+        <button class="btn ghost sm" data-act="unload-all-models">全部卸载</button></div>
+      <div class="model-list" id="model-list"></div>
+      <p class="hint" id="model-hint" style="margin:12px 0 0"></p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 体检 -->
+  <section class="view" id="view-health" role="tabpanel" hidden>
+    <div class="health-top">
+      <div class="panel">
+        <div class="panel-head"><h2 class="panel-title">健康度</h2><span class="grow"></span>
+          <span class="tiny faint" id="report-time"></span></div>
+        <div class="score-wrap">
+          <div class="ring" id="score-ring">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="bg" cx="60" cy="60" r="52"></circle>
+              <circle class="fg" cx="60" cy="60" r="52" id="score-arc"
+                      stroke-dasharray="326.7" stroke-dashoffset="326.7"></circle>
+            </svg>
+            <div class="mid"><b id="score-num">—</b><span id="score-grade">尚未检查</span></div>
+          </div>
+          <div class="score-stats" id="score-stats"></div>
+        </div>
+        <div class="row" style="margin-top:12px; justify-content:center">
+          <button class="btn primary sm" data-act="audit">重新检查</button>
+          <button class="btn sm" data-act="audit-deep">深度检查</button>
+          <button class="btn ghost sm" data-act="open-report">导出报告</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 class="panel-title">检查项</h2><span class="grow"></span>
+          <span class="tiny faint" id="findings-count"></span></div>
+        <div class="row" style="margin-bottom:10px">
+          <div class="chips" id="audit-filters"></div>
+          <span class="grow"></span>
+          <input id="audit-search" type="text" placeholder="搜索编号 / 标题 / 证据"
+                 style="max-width:220px" aria-label="搜索检查项">
+        </div>
+        <div class="findings" id="findings">
+          <div class="empty">尚未检查。点「重新检查」生成一份完整报告。</div>
+        </div>
+      </div>
+    </div>
+
+    <details class="panel" id="sec-wf">
+      <summary>工作流校验<span class="pill mute" id="wf-pill" style="margin-left:auto">未校验</span></summary>
+      <div class="body">
+        <div class="row">
+          <button class="btn sm" data-act="verify-workflow">校验工作流</button>
+          <span class="tiny faint">对照本机 /object_info 检查节点名与输入名。</span>
+        </div>
+        <div id="wf-list"><div class="empty">点「校验工作流」开始。</div></div>
+      </div>
+    </details>
+
+    <details class="panel" id="sec-log">
+      <summary>运行日志<span class="pill mute" id="log-pill" style="margin-left:auto">未加载</span></summary>
+      <div class="body">
+        <div class="row">
+          <button class="btn sm" data-act="load-log">加载日志</button>
+          <div class="chips">
+            <button class="chipbtn" data-act="log-mode" data-mode="all" aria-pressed="true">全部</button>
+            <button class="chipbtn" data-act="log-mode" data-mode="warn" aria-pressed="false">警告与错误</button>
+          </div>
+          <span class="grow"></span>
+          <input id="log-search" type="text" placeholder="过滤关键字" style="max-width:180px" aria-label="过滤日志">
+        </div>
+        <pre class="log" id="log-body">尚未加载。</pre>
+      </div>
+    </details>
+  </section>
+</main>
+
+<div class="task" id="task" data-show="0" data-tone="idle" data-busy="0" role="status" aria-live="polite">
+  <div class="bar">
+    <i class="dot"></i>
+    <span class="label" id="task-label"></span>
+    <span class="meta" id="task-meta"></span>
+    <span class="grow"></span>
+    <button class="btn ghost sm" data-act="task-toggle" hidden>详情</button>
+    <button class="btn ghost sm" data-act="task-close">关闭</button>
+  </div>
+  <pre id="task-out" hidden></pre>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<div class="lightbox" id="lightbox" data-show="0" role="dialog" aria-modal="true" aria-label="查看大图">
+  <button class="icon-btn lb-close" data-act="lightbox-close" title="关闭（Esc）" aria-label="关闭">✕</button>
+  <button class="icon-btn lb-nav lb-prev" data-act="lightbox-prev" title="上一张（←）" aria-label="上一张">‹</button>
+  <button class="icon-btn lb-nav lb-next" data-act="lightbox-next" title="下一张（→）" aria-label="下一张">›</button>
+  <figure>
+    <img id="lb-img" alt="">
+    <figcaption><span id="lb-name" class="mono"></span><span class="grow"></span>
+      <button class="link" data-act="lightbox-download">下载</button>
+      <button class="link" data-act="lightbox-reveal">文件夹</button>
+      <span id="lb-meta" class="faint"></span></figcaption>
+  </figure>
+</div>
+
+<noscript><p style="padding:20px">这个控制台需要 JavaScript。</p></noscript>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ------------------------------------------------------------- state */
+  const S = {
+    tab: "home",
+    state: null,
+    lastRefresh: 0,
+    prompts: null,
+    promptsError: "",
+    bible: null,
+    promptDirty: false,
+    report: null,
+    gallery: null,
+    galleryError: "",
+    models: null,
+    galleryLoading: false,
+    galleryFilter: "all",
+    workflows: null,
+    logs: [],
+    logMode: "all",
+    auditFilter: "fail",
+    auditQuery: "",
+    openStage: null,
+    tplKey: "",
+    tplValues: {},
+    tplGroup: "",
+    zhDisplay: true,
+    cards: [],
+    cardId: "",
+    workflowOverride: "",
+    library: { loras: [], families: {}, items: [], family: "all" },
+    presets: {},
+    presetsLoaded: false,
+    pmEdit: null,
+    loraStack: [],
+    gen: {
+      busy: false, promptId: "", outputs: [], seed: null, state: "idle",
+      options: {}, meta: {}, startedAt: 0, elapsed: null, historyId: "",
+      timer: null, delay: null, error: "", missing: [],
+    },
+    lightbox: null,
+    homeSig: "",
+    railSig: "",
+    timer: null,
+  };
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  function fmtBytes(n) {
+    if (!Number.isFinite(n)) return "—";
+    if (n > 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + " MB";
+    if (n > 1024) return (n / 1024).toFixed(0) + " KB";
+    return n + " B";
+  }
+  function fmtClock(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d)) return String(iso);
+    return d.toLocaleString("zh-CN", { month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit" });
+  }
+  function nowClock() {
+    return new Date().toLocaleTimeString("zh-CN", { hour12: false });
+  }
+
+  /* ------------------------------------------------------------- net */
+  async function api(path, body) {
+    const init = body === undefined ? {} : {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    };
+    const res = await fetch(path, init);
+    const text = await res.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text.slice(0, 240) }; }
+    if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+    return data;
+  }
+
+  /* ------------------------------------------------------------- ui bits */
+  function toast(message, tone = "") {
+    const el = document.createElement("div");
+    el.className = "toast";
+    if (tone) el.dataset.tone = tone;
+    el.textContent = message;
+    $("#toasts").appendChild(el);
+    setTimeout(() => el.remove(), 2800);
+  }
+
+  const task = {
+    tick: null, t0: 0,
+    start(label, meta = "") {
+      const el = $("#task");
+      el.dataset.show = "1"; el.dataset.busy = "1"; el.dataset.tone = "idle";
+      $("#task-label").textContent = label;
+      $("#task-meta").textContent = meta;
+      const out = $("#task-out");
+      out.hidden = true; out.textContent = "";
+      $('[data-act="task-toggle"]').hidden = true;
+      $('[data-act="task-toggle"]').textContent = "详情";
+      this.t0 = Date.now();
+      clearInterval(this.tick);
+      this.tick = setInterval(() => {
+        if ($("#task").dataset.busy === "1") {
+          $("#task-meta").textContent = `用时 ${((Date.now() - this.t0) / 1000).toFixed(1)}s`;
+        }
+      }, 200);
+    },
+    meta(text) { $("#task-meta").textContent = text; },
+    done(ok, output = "", label) {
+      clearInterval(this.tick);
+      const el = $("#task");
+      el.dataset.busy = "0"; el.dataset.tone = ok ? "ok" : "bad";
+      if (label) $("#task-label").textContent = label;
+      const secs = ((Date.now() - this.t0) / 1000).toFixed(1);
+      $("#task-meta").textContent = label ? `${secs}s` : `${ok ? "完成" : "失败"} · ${secs}s`;
+      const text = String(output || "").trim();
+      if (text) {
+        $("#task-out").textContent = text;
+        $('[data-act="task-toggle"]').hidden = false;
+      }
+    },
+    fail(err) { this.done(false, err && err.message ? err.message : String(err), "失败"); },
+    close() { $("#task").dataset.show = "0"; },
+  };
+
+  async function run(label, fn) {
+    task.start(label);
+    try {
+      const out = await fn();
+      task.done(true, typeof out === "string" ? out : "");
+      return out;
+    } catch (err) {
+      task.fail(err);
+      toast(err.message || "操作失败", "bad");
+      return null;
+    }
+  }
+
+  function showFatal(message) {
+    const el = $("#fatal");
+    el.hidden = false;
+    el.textContent = "页面脚本错误：" + message;
+  }
+
+  /* ------------------------------------------------------------- theme */
+  function applyTheme(name) {
+    const theme = name === "light" ? "light" : "dark";
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("studio.theme", theme); } catch (_) { /* ignore */ }
+  }
+
+  /* ------------------------------------------------------------- tabs */
+  const TABS = ["home", "studio", "library", "gallery", "models", "health"];
+
+  function switchTab(name, { push = true } = {}) {
+    if (!TABS.includes(name)) name = "home";
+    S.tab = name;
+    if (push && location.hash !== "#" + name) location.hash = name;
+    $$(".tabs [data-tab]").forEach((b) =>
+      b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+    $$("main > section").forEach((s) => { s.hidden = s.id !== "view-" + name; });
+    if (name === "studio") {
+      if (!S.prompts) loadPrompts();
+      loadBible().catch(() => {});
+      paintTypeChips();
+      ensureLoras();
+    }
+    if (name === "library") loadLibrary();
+    if (name === "gallery") loadGallery();
+    if (name === "models") loadModels(true);
+    if (name === "health") {
+      paintReport();
+      if (!S.report) loadReport();
+    }
+  }
+
+  /* ------------------------------------------------------------- refresh */
+  async function refresh({ silent = true } = {}) {
+    try {
+      S.state = await api("/api/state");
+      S.lastRefresh = Date.now();
+      paintChrome();
+      paintHome();
+      paintRail();
+      if (S.tab === "studio") paintTemplateMeta();
+      if (!silent) toast("已刷新", "ok");
+    } catch (err) {
+      $("#chip-comfy").dataset.state = "bad";
+      $("#chip-comfy-text").textContent = "控制台不可达";
+      $("#clock").textContent = "连接中断";
+      if (!silent) task.fail(err);
+    }
+  }
+
+  function comfyState() {
+    const c = (S.state && S.state.comfyui) || {};
+    if (c.online) return { tone: "ok", text: "ComfyUI 在线" };
+    if (c.state === "starting") return { tone: "warn", text: "ComfyUI 启动中" };
+    if (c.state === "missing") return { tone: "bad", text: "ComfyUI 未安装" };
+    if (c.state === "error") return { tone: "bad", text: "ComfyUI 启动失败" };
+    return { tone: "mute", text: "ComfyUI 未运行" };
+  }
+  function comfyOnline() { return Boolean(S.state && S.state.comfyui && S.state.comfyui.online); }
+
+  function paintChrome() {
+    const c = comfyState();
+    const chip = $("#chip-comfy");
+    chip.dataset.state = c.tone;
+    $("#chip-comfy-text").textContent = c.text;
+
+    const gpu = S.state && S.state.gpu;
+    const gpuChip = $("#chip-gpu");
+    if (gpu) {
+      const pct = gpu.total_mb ? Math.round(gpu.used_mb / gpu.total_mb * 100) : 0;
+      gpuChip.dataset.state = pct > 92 ? "warn" : "mute";
+      $("#chip-gpu-text").innerHTML =
+        `显存 <b>${(gpu.used_mb / 1024).toFixed(1)}</b> / ${(gpu.total_mb / 1024).toFixed(0)} GB`;
+    } else {
+      gpuChip.dataset.state = "mute";
+      $("#chip-gpu-text").textContent = "显存 —";
+    }
+
+    const q = (S.state && S.state.queue) || {};
+    const busy = (q.running || 0) + (q.pending || 0);
+    const clock = $("#clock");
+    clock.textContent = (busy > 0 ? `渲染中 ${q.running} · 队列 ${q.pending} · ` : "")
+      + "更新于 " + nowClock();
+    const queueChip = $("#chip-queue");
+    queueChip.hidden = busy === 0;
+    if (busy) {
+      $("#chip-queue-text").textContent =
+        `渲染中 ${q.running || 0} · 排队 ${q.pending || 0}`;
+    }
+
+    const ui = (S.state && S.state.ui) || {};
+    if (ui.title) $("#brand-title").textContent = ui.title;
+    if (ui.subtitle) $("#brand-sub").textContent = `${ui.subtitle} · 本机`;
+    document.title = (ui.title || "漫画与插画工作台") + " · 控制台";
+  }
+
+  /* ------------------------------------------------------------- home */
+  const TONE_PILL = { pass: "ok", warn: "warn", fail: "bad", pending: "mute" };
+  const STATUS_TEXT = { pass: "通过", warn: "进行中", fail: "未通过", pending: "未开始" };
+
+  const FIELD_LABELS = {
+    trigger: "触发词", hair: "发型与发色", eyes: "瞳色与眼型", outfit: "服装",
+    signature: "标志性特征", appearance: "外观（发型/瞳色/服装/特征）", view: "视角",
+    view_or_expression: "视角或表情", expression: "表情", shot: "景别", action: "动作",
+    background: "背景", scene_sentences: "场景描述（两句以上）", tags: "外观标签",
+    region_content: "选区内容", subject: "主体描述", change: "要改变的部分",
+    keep: "要保持的部分", panel_prompt: "整格提示词", variable_tags: "变量标签",
+    outfit_or_scene: "服装或场景", camera: "镜头运动", environment: "环境与光线",
+    expression_change: "表情变化",
+  };
+
+  function videoPaused() {
+    const v = S.state && S.state.ui && S.state.ui.video;
+    return v && v.paused ? (v.stage ?? 5) : null;
+  }
+
+  function heroModel() {
+    const c = (S.state && S.state.comfyui) || {};
+    const models = Object.entries((S.state && S.state.models) || {});
+    const missing = models.filter(([, ok]) => !ok).map(([k]) => k);
+    const baseline = S.state && S.state.stages && S.state.stages.assets
+      && S.state.stages.assets.baseline;
+
+    if (c.state === "missing") {
+      return {
+        tone: "bad", title: "还没安装 ComfyUI",
+        sub: "出图与训练都依赖 ComfyUI。装好便携版并把路径告诉控制台，后面的步骤会自动跟上。",
+        hint: c.hint || "", tags: [],
+        acts: [{ act: "copy-hint", label: "复制安装命令", kind: "primary" },
+               { act: "check-env", label: "再检查一次" }],
+      };
+    }
+    if (c.state === "error") {
+      return {
+        tone: "bad", title: "ComfyUI 启动失败", sub: c.message || "进程没有在预期时间内就绪。",
+        hint: c.hint || "", tags: [],
+        acts: [{ act: "comfy-start", label: "重试启动", kind: "primary" },
+               { act: "goto-health", label: "看日志" }],
+      };
+    }
+    if (c.online) {
+      return {
+        tone: missing.length ? "warn" : "ok",
+        title: missing.length ? "ComfyUI 已就绪，还缺必需权重" : "环境就绪，可以开始创作",
+        sub: missing.length
+          ? `还有 ${missing.length} 个必需权重未就位，放好后即可出图。`
+          : (c.version ? `ComfyUI ${c.version} 在线，工作流可直接提交。` : "ComfyUI 在线。"),
+        hint: missing.length ? "缺少：\n  " + missing.join("\n  ") : "",
+        tags: [
+          { text: baseline ? `基准 ${baseline.elapsed_s}s / 1024²` : "尚无出图基准", tone: baseline ? "ok" : "mute" },
+          { text: "视频生成：暂缓", tone: "pause" },
+        ],
+        acts: baseline
+          ? [{ act: "goto-studio", label: "去创作", kind: "primary" },
+             { act: "goto-gallery", label: "看产出" }]
+          : [{ act: "smoke", label: "跑一次出图验收", kind: "primary" },
+             { act: "goto-studio", label: "去创作" }],
+      };
+    }
+    return {
+      tone: "warn", title: "ComfyUI 未运行",
+      sub: "控制台本身正常，只是推理服务还没起来。首次启动通常需要 30 到 120 秒。",
+      hint: "", tags: [],
+      acts: [{ act: "comfy-start", label: "启动 ComfyUI", kind: "primary" },
+             { act: "comfy-stop", label: "停止并释放显存" }],
+    };
+  }
+
+  function paintHome() {
+    if (!S.state) return;
+    const m = heroModel();
+    const sig = JSON.stringify([m, S.state.gpu, S.state.models, S.state.audit,
+      S.state.stages && S.state.stages.counts]);
+    if (sig === S.homeSig) return;
+    S.homeSig = sig;
+
+    const hero = $("#hero");
+    hero.dataset.tone = m.tone;
+    $("#hero-title").textContent = m.title;
+    $("#hero-sub").textContent = m.sub;
+
+    const hint = $("#hero-hint");
+    hint.hidden = !m.hint;
+    hint.textContent = m.hint || "";
+
+    $("#hero-acts").innerHTML = m.acts.map((a) =>
+      `<button class="btn ${a.kind === "primary" ? "primary" : ""}" data-act="${esc(a.act)}">
+         ${esc(a.label)}</button>`).join("");
+
+    $("#hero-tags").innerHTML = (m.tags || []).map((t) =>
+      `<span class="pill ${esc(t.tone)}">${esc(t.text)}</span>`).join("");
+
+    paintMetrics();
+    paintTodos();
+    paintVideoNote();
+  }
+
+  function paintMetrics() {
+    const s = S.state || {};
+    const g = s.gpu;
+    const models = Object.entries(s.models || {});
+    const present = models.filter(([, ok]) => ok).length;
+    const gates = (s.stages && s.stages.gates) || [];
+    const passed = gates.filter((x) => x.status === "pass").length;
+    const audit = s.audit;
+    const vramPct = g && g.total_mb ? clamp(g.used_mb / g.total_mb * 100, 0, 100) : 0;
+
+    const card = (k, v, sub, extra = "") =>
+      `<div class="metric"><div class="k">${esc(k)}</div><div class="v">${v}</div>
+       ${sub ? `<div class="s">${sub}</div>` : ""}${extra}</div>`;
+
+    const comfy = comfyState();
+    const auditPill = audit && audit.score != null
+      ? `<span class="pill ${audit.score >= 90 ? "ok" : audit.score >= 70 ? "warn" : "bad"}">
+           ${audit.score}/100 ${esc(audit.grade || "")}</span>`
+      : `<span class="pill mute">未检查</span>`;
+
+    $("#metrics").innerHTML = [
+      card("ComfyUI", `<span class="pill ${comfy.tone === "ok" ? "ok" : comfy.tone === "warn" ? "warn" : "bad"}">${esc(comfy.text.replace("ComfyUI ", ""))}</span>`,
+        `<span class="mono tiny">${esc((s.comfyui && s.comfyui.url) || "")}</span>`),
+      card("显存", g ? `${(g.used_mb / 1024).toFixed(1)} <span class="faint tiny">/ ${(g.total_mb / 1024).toFixed(0)} GB</span>` : "未检测到 GPU",
+        g ? `${esc(g.name)} · 占用 ${esc(g.util)}%` : "nvidia-smi 不可用",
+        g ? `<div class="meter"><i style="width:${vramPct.toFixed(1)}%"></i></div>` : ""),
+      card("必需权重", `${present} <span class="faint tiny">/ ${models.length || 3}</span>`,
+        present === models.length ? "全部就位" : "缺失清单见下方待办"),
+      card("阶段", `${passed} <span class="faint tiny">/ ${gates.length || 6} 通过</span>`,
+        `健康度 ${auditPill}`),
+    ].join("");
+  }
+
+  function paintTodos() {
+    const s = S.state || {};
+    const c = s.comfyui || {};
+    const missing = Object.entries(s.models || {}).filter(([, ok]) => !ok).map(([k]) => k);
+    const gates = (s.stages && s.stages.gates) || [];
+    const blocking = gates.find((g) => !g.optional && g.status !== "pass");
+    const baseline = s.stages && s.stages.assets && s.stages.assets.baseline;
+    const finals = (s.stages && s.stages.counts && s.stages.counts.finals) || 0;
+    const steps = [];
+
+    if (c.state === "missing") {
+      steps.push({ t: "安装 ComfyUI 便携版", d: "下载 Windows 便携包解压到任意目录，例如 D:\\ComfyUI。", act: null });
+      steps.push({ t: "把路径告诉控制台",
+        d: 'PowerShell 执行 setx STUDIO_COMFYUI_DIR "D:\\ComfyUI"，然后重开控制台。',
+        act: { act: "copy-hint", label: "复制命令" } });
+    } else if (!c.online) {
+      steps.push({ t: "启动 ComfyUI", d: "点击右侧按钮并等待就绪（30–120 秒）。",
+        act: { act: "comfy-start", label: "启动" } });
+    }
+
+    if (c.online && missing.length) {
+      steps.push({ t: `放入 ${missing.length} 个必需权重`, d: missing.join("、"),
+        act: { act: "copy-missing", label: "复制清单" } });
+    }
+
+    if (c.online && !baseline) {
+      steps.push({ t: "跑一次出图验收", d: "以 1024×1024 出图并记录基准耗时。",
+        act: { act: "smoke", label: "开始验收" } });
+    }
+
+    if (blocking) {
+      const first = (blocking.checks || []).find((x) => !ok(x));
+      steps.push({ t: `阶段 ${blocking.stage} · ${blocking.name}`,
+        d: first ? `${first.label}：${first.detail}` : "尚未开始",
+        act: { act: "goto-stage", label: "看检查项", stage: blocking.stage } });
+    }
+
+    if (c.online && !steps.length && finals === 0) {
+      steps.push({ t: "出第一张插画", d: "在创作页选模板、填设定、生成，然后归档到项目。",
+        act: { act: "goto-studio", label: "去创作" } });
+    }
+
+    const audit = s.audit;
+    if (audit && audit.summary && audit.summary.fail) {
+      steps.push({ t: `处理 ${audit.summary.fail} 个失败检查项`,
+        d: "体检页给出逐条证据与修复建议。",
+        act: { act: "goto-health", label: "去体检" } });
+    }
+
+    $("#todo-hint").textContent = steps.length ? `${steps.length} 项待办 · 按优先级排序` : "";
+
+    if (!steps.length) {
+      $("#todos").innerHTML = `<div class="empty"><b>没有待办事项</b>环境、权重与阶段门都已就绪。</div>`;
+      return;
+    }
+    $("#todos").innerHTML = steps.map((st, i) => `
+      <div class="todo">
+        <span class="n">${i + 1}</span>
+        <span><span class="t">${esc(st.t)}</span><span class="d">${esc(st.d)}</span></span>
+        ${st.act ? `<button class="btn sm" data-act="${esc(st.act.act)}"
+            ${st.act.stage !== undefined ? `data-stage="${st.act.stage}"` : ""}>${esc(st.act.label)}</button>` : ""}
+      </div>`).join("");
+  }
+
+  const ok = (check) => Boolean(check && check.ok);
+
+  function paintVideoNote() {
+    const ui = (S.state && S.state.ui) || {};
+    const note = $("#video-note");
+    if (ui.video && ui.video.paused) {
+      note.hidden = false;
+      note.innerHTML = `<b>阶段 5 · 视频生成：暂时搁置</b><br>${esc(ui.video.note || "")}`;
+    } else {
+      note.hidden = true;
+      note.textContent = "";
+    }
+  }
+
+  function paintRail() {
+    const gates = (S.state && S.state.stages && S.state.stages.gates) || [];
+    if (!gates.length) { $("#stepper").innerHTML = ""; return; }
+    const paused = videoPaused();
+    const sig = JSON.stringify([gates.map((g) => [g.status, g.blocked,
+      (g.checks || []).map((c) => Boolean(c.ok))]), S.openStage, paused]);
+    if (sig === S.railSig) return;
+    S.railSig = sig;
+
+    $("#stepper").innerHTML = gates.map((g) => {
+      const checks = g.checks || [];
+      const done = checks.filter((c) => c.ok).length;
+      const isPaused = paused !== null && g.stage === paused;
+      return `<button class="step ${esc(g.status)}${isPaused ? " paused" : ""}"
+        data-act="stage" data-stage="${g.stage}" aria-pressed="${S.openStage === g.stage}">
+        <div class="n">阶段 ${g.stage}${g.optional ? " · 可选" : ""}</div>
+        <div class="t">${esc(g.name)}</div>
+        <div class="meta">
+          <span class="pill ${TONE_PILL[g.status] || "mute"}">${STATUS_TEXT[g.status] || g.status}</span>
+          <span class="tiny faint">${done}/${checks.length}</span>
+          ${isPaused ? '<span class="pill pause">暂缓</span>' : ""}
+          ${g.blocked && !isPaused ? '<span class="pill mute">阻塞</span>' : ""}
+        </div>
+      </button>`;
+    }).join("");
+
+    paintStageDetail();
+  }
+
+  function paintStageDetail() {
+    const box = $("#stage-detail");
+    const gates = (S.state && S.state.stages && S.state.stages.gates) || [];
+    const gate = gates.find((g) => g.stage === S.openStage);
+    if (!gate) { box.hidden = true; return; }
+    box.hidden = false;
+    const paused = videoPaused();
+    box.innerHTML = `
+      <div class="tiny faint" style="margin-bottom:6px">
+        阶段 ${gate.stage} · ${esc(gate.name)}
+        ${gate.blocked ? '<span class="pill mute" style="margin-left:6px">被前置阶段阻塞</span>' : ""}
+        ${paused !== null && gate.stage === paused ? '<span class="pill pause" style="margin-left:6px">暂缓</span>' : ""}
+      </div>` + (gate.checks || []).map((ck) => `
+        <div class="check ${ck.ok ? "ok" : "no"}">
+          <span class="ic">${ck.ok ? "✔" : "✘"}</span>
+          <span>${esc(ck.label)}</span>
+          <span class="d">${esc(ck.detail)}</span>
+        </div>`).join("");
+  }
+
+  /* ------------------------------------------------------------- autoresize */
+  const PROMPT_IDS = ["pos", "neg"];
+  const PROMPT_DEFAULT = { pos: 190, neg: 96 };
+  const SIZE_KEY = "studio.promptSizes";
+
+  function growField(el) {
+    if (!el || el.tagName !== "TEXTAREA") return;
+    const cap = 118;
+    el.style.height = "auto";
+    const wanted = Math.min(el.scrollHeight + 2, cap);
+    el.style.height = wanted + "px";
+    el.style.overflowY = el.scrollHeight > cap ? "auto" : "hidden";
+  }
+
+  function fitPromptBoxes() {
+    // Grow-only: if the rendered prompt is taller than the box, make the box
+    // taller (up to half the viewport) instead of showing three lines of text
+    // and a scrollbar. Shrinking is explicit: double-click resets the height.
+    PROMPT_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el || el.dataset.sized === "1") return;
+      const cap = Math.round(window.innerHeight * 0.5);
+      const needed = el.scrollHeight;
+      const current = el.clientHeight;
+      if (needed <= current + 2) return;
+      el._programmatic = true;
+      el.style.height = Math.min(needed + 2, cap) + "px";
+    });
+  }
+
+  function loadSizes() {
+    try { return JSON.parse(localStorage.getItem(SIZE_KEY) || "{}") || {}; }
+    catch (_) { return {}; }
+  }
+
+  function savePromptSize(id, height) {
+    try {
+      const sizes = loadSizes();
+      sizes[id] = Math.round(height);
+      localStorage.setItem(SIZE_KEY, JSON.stringify(sizes));
+    } catch (_) { /* storage may be unavailable */ }
+  }
+
+  function resetPromptSize(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.height = "";
+    delete el.dataset.sized;
+    try {
+      const sizes = loadSizes();
+      delete sizes[id];
+      localStorage.setItem(SIZE_KEY, JSON.stringify(sizes));
+    } catch (_) { /* ignore */ }
+    fitPromptBoxes();
+    toast("已恢复默认高度", "ok");
+  }
+
+  function watchPromptSizes() {
+    const sizes = loadSizes();
+    PROMPT_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (sizes[id]) {
+        el._programmatic = true;          // restored size is not a user drag
+        el.style.height = sizes[id] + "px";
+        el.dataset.sized = "1";
+      }
+      if (!window.ResizeObserver) return;
+      let last = Math.round(el.getBoundingClientRect().height);
+      let pending = null;
+      new ResizeObserver(() => {
+        const px = Math.round(el.getBoundingClientRect().height);
+        if (el._programmatic) { el._programmatic = false; last = px; return; }
+        if (px === last) return;
+        last = px;
+        clearTimeout(pending);
+        pending = setTimeout(() => {
+          if (Math.abs(px - PROMPT_DEFAULT[id]) <= 2) return;
+          el.dataset.sized = "1";
+          savePromptSize(id, px);
+        }, 350);
+      }).observe(el);
+    });
+  }
+
+  /* ------------------------------------------------------------- studio */
+  function templateMap() { return (S.prompts && S.prompts.templates && S.prompts.templates.templates) || {}; }
+  function profileMap() { return (S.prompts && S.prompts.params && S.prompts.params.profiles) || {}; }
+  function panelMap() { return (S.prompts && S.prompts.params && S.prompts.params.panel) || {}; }
+  function currentTemplate() { return templateMap()[S.tplKey] || {}; }
+
+  async function loadPrompts() {
+    try {
+      S.prompts = await api("/api/prompts");
+      S.promptsError = "";
+    } catch (err) {
+      S.promptsError = err.message;
+    }
+    paintTemplateSelect();
+    paintPresets();
+    syncOptionsFromTemplate();
+  }
+
+  // 下拉只列当前类型那一组，避免一长串；右下角的开关可切「全部」。
+  function templateKeysForSelect(tpl) {
+    const keys = Object.keys(tpl);
+    if (S.tplGroup === "all") return keys;
+    const group = S.tplGroup || (tpl[S.tplKey] || {}).group;
+    if (!group) return keys;
+    const scoped = keys.filter((k) => tpl[k].group === group || k === S.tplKey);
+    return scoped.length ? scoped : keys;
+  }
+
+  function paintTemplateSelect() {
+    const tpl = templateMap();
+    const keys = Object.keys(tpl);
+    const select = $("#tpl");
+    if (!keys.length) {
+      select.innerHTML = `<option value="">${S.promptsError ? "模板加载失败" : "正在加载…"}</option>`;
+      $("#tpl-fields").innerHTML = "";
+      $("#tpl-note").textContent = S.promptsError
+        ? `模板加载失败：${S.promptsError}` : "正在读取 config/prompts.json…";
+      return;
+    }
+
+    const paused = videoPaused();
+    const enabled = keys.filter((k) => paused === null || (tpl[k].stage ?? 0) !== paused);
+    const preferred = ["stage3_illustration", "stage3_swim_w1_highneck"].find((k) => enabled.includes(k));
+    if (!S.tplKey || !tpl[S.tplKey] || (paused !== null && (tpl[S.tplKey].stage ?? 0) === paused)) {
+      S.tplKey = preferred || enabled[0] || keys[0];
+    }
+
+    const byStage = new Map();
+    templateKeysForSelect(tpl).forEach((k) => {
+      const stage = tpl[k].stage ?? 0;
+      if (!byStage.has(stage)) byStage.set(stage, []);
+      byStage.get(stage).push(k);
+    });
+
+    select.innerHTML = [...byStage.keys()].sort((a, b) => a - b).map((stage) => {
+      const isPaused = paused !== null && stage === paused;
+      const label = `阶段 ${stage}${isPaused ? " · 暂缓" : ""}`;
+      return `<optgroup label="${esc(label)}">` + byStage.get(stage).map((k) => {
+        const t = tpl[k];
+        const suffix = isPaused ? "（暂缓）" : "";
+        return `<option value="${esc(k)}"${isPaused ? " disabled" : ""}>${esc(t.title || k)}${suffix}</option>`;
+      }).join("") + `</optgroup>`;
+    }).join("");
+
+    select.value = S.tplKey;
+    const scope = $("#tpl-scope");
+    if (scope) scope.textContent = S.tplGroup === "all" ? "只看本类" : "看全部";
+    paintTemplateForm();
+    paintTypeChips();
+  }
+
+  function paintTemplateForm() {
+    const t = currentTemplate();
+    $("#tpl-stage").textContent = t.stage !== undefined ? `阶段 ${t.stage}` : "";
+    $("#tpl-note").textContent = t.note || "选择模板后可用设定表一键填充。";
+
+    const ph = t.placeholders || [];
+    const saved = S.tplValues[S.tplKey] || {};
+    // Textarea instead of input: long tag fragments stay readable, and the box
+    // grows to its content up to a cap (then scrolls) instead of clipping.
+    $("#tpl-fields").innerHTML = ph.map((p) => `
+      <div class="field">
+        <label for="f-${esc(p)}">${esc(FIELD_LABELS[p] || p)}</label>
+        <textarea id="f-${esc(p)}" data-field="${esc(p)}" data-grow rows="1"
+                  placeholder="${esc(p)}" spellcheck="false"
+                  >${esc(saved[p] ?? "")}</textarea>
+      </div>`).join("") || `<p class="hint">这个模板没有可变字段。</p>`;
+
+    $$("#tpl-fields textarea[data-grow]").forEach(growField);
+    paintTemplateMeta();
+    scheduleAutoRender();
+  }
+
+  function paintTemplateMeta() {
+    const t = currentTemplate();
+    const prof = profileMap()[t.params_key] || {};
+    const bits = [];
+    if (prof.label) bits.push(prof.label);
+    if (prof.steps != null) bits.push(`${prof.steps} 步`);
+    if (prof.cfg != null) bits.push(`CFG ${prof.cfg}`);
+    if (prof.sampler) bits.push(prof.sampler);
+    $("#param-tag").textContent = bits.length ? bits.join(" · ") : (t.params_key || "无参数档");
+  }
+
+  function syncOptionsFromTemplate() {
+    const t = currentTemplate();
+    const prof = profileMap()[t.params_key] || {};
+    const panel = panelMap();
+    const square = panel.square || [1024, 1024];
+    const width = num($("#opt-width").value);
+    const height = num($("#opt-height").value);
+    // 模板自带画幅/种子时，切换模板即套用（清空种子输入框可恢复随机）。
+    if (t.width && t.height) {
+      $("#opt-width").value = t.width;
+      $("#opt-height").value = t.height;
+    }
+    if (t.seed !== undefined && t.seed !== null && t.seed !== "") $("#opt-seed").value = t.seed;
+    if (!width || !height) {
+      $("#opt-width").value = square[0];
+      $("#opt-height").value = square[1];
+    }
+    $("#opt-steps").value = prof.steps == null ? "" : prof.steps;
+    $("#opt-cfg").value = prof.cfg == null ? "" : prof.cfg;
+    paintPresetState();
+    paintEstimate();
+  }
+
+  function paintPresets() {
+    const panel = panelMap();
+    const presets = [
+      { key: "square", label: "方形 1024²", size: panel.square || [1024, 1024] },
+      { key: "portrait", label: "竖构图", size: panel.portrait || [896, 1152] },
+      { key: "landscape", label: "横构图", size: panel.landscape || [1152, 896] },
+    ];
+    $("#presets").innerHTML = presets.map((p) => `
+      <button class="chipbtn" data-act="preset" data-w="${p.size[0]}" data-h="${p.size[1]}">
+        ${esc(p.label)} <span class="faint">${p.size[0]}×${p.size[1]}</span>
+      </button>`).join("");
+    paintPresetState();
+  }
+
+  function paintPresetState() {
+    const w = Number($("#opt-width").value);
+    const h = Number($("#opt-height").value);
+    $$("#presets [data-act='preset']").forEach((b) => {
+      b.setAttribute("aria-pressed", String(Number(b.dataset.w) === w && Number(b.dataset.h) === h));
+    });
+  }
+
+  function readFields() {
+    const values = {};
+    $$("#tpl-fields [data-field]").forEach((el) => { values[el.dataset.field] = el.value.trim(); });
+    return values;
+  }
+
+  function fillFromBible() {
+    const assets = (S.state && S.state.stages && S.state.stages.assets) || {};
+    const fields = (S.bible && S.bible.fields) || (assets.bible && assets.bible.fields) || {};
+    const map = {
+      trigger: "trigger", hair: "hair", eyes: "eyes", outfit: "outfit",
+      signature: "signature", appearance: ["hair", "eyes", "outfit", "signature"],
+    };
+    let filled = 0;
+    $$("#tpl-fields [data-field]").forEach((el) => {
+      const name = el.dataset.field;
+      const src = map[name];
+      if (Array.isArray(src)) {
+        const value = src.map((k) => fields[k]).filter(Boolean).join(", ");
+        if (value) { el.value = value; filled++; }
+      } else if (src && fields[src]) {
+        el.value = fields[src]; filled++;
+      }
+    });
+    if (filled) toast(`已用设定表填充 ${filled} 个字段`, "ok");
+    else toast("设定表为空，或字段名不匹配当前模板", "bad");
+  }
+
+  /* ------------------------------------------------------------- bible */
+  function bibleDraft() {
+    const fields = {};
+    $$("#bible-fields [data-bible]").forEach((el) => {
+      const key = el.dataset.bible;
+      fields[key] = key === "lewd" ? el.value : toEnglishTags(el.value);
+    });
+    return fields;
+  }
+
+  // 角色卡只拼「会进提示词」的字段：体型/发型/瞳色/服装/标志特征/表情/补充。
+  // 角色卡按「字段表」的顺序拼：字段表改了、加了栏，正文会自动跟着变。
+  function composeBible(fields) {
+    const f = fields || bibleDraft();
+    const schema = fieldSchema();
+    const parts = ["1girl", "solo"];
+    if (schema.length) {
+      schema.forEach((item) => {
+        const key = item.key;
+        const value = String(f[key] === undefined ? "" : f[key]).trim();
+        if (!value) return;
+        if (key === "lewd") {
+          const mapped = LEWD_TAGS[value];
+          if (mapped) parts.push(mapped);   // 全年龄 映射为空 = 什么都不加
+          return;
+        }
+        parts.push(value);
+      });
+    } else {
+      parts.push(f.body, f.hair, f.eyes, f.outfit, f.signature, f.personality,
+        f.extras, LEWD_TAGS[String(f.lewd || "")] || "");
+    }
+    const seen = new Set();
+    return parts.filter((p) => {
+      const v = String(p || "").trim();
+      if (!v || seen.has(v.toLowerCase())) return false;
+      seen.add(v.toLowerCase());
+      return true;
+    }).join(", ");
+  }
+
+  function paintBiblePreview() {
+    const box = $("#bible-preview");
+    if (!box) return;
+    const text = composeBible();
+    box.textContent = text || "（填几项，这里就拼成可直接用的标签）";
+    const sync = $("#bible-sync");
+    if (sync) {
+      const pos = ($("#pos").value || "").trim();
+      const level = String(bibleDraft().lewd || "全年龄");
+      if (!text) {
+        sync.textContent = "";
+        sync.className = "bible-sync";
+      } else if (pos && pos.includes(text)) {
+        sync.textContent = `✓ 已在右框里 · 本卡 ${text.length} 字符 · 右框 ${pos.length} 字符的档位“${level}”`;
+        sync.className = "bible-sync ok";
+      } else {
+        sync.textContent = `未插入右框 · 本卡 ${text.length} 字符 · 右框 ${pos.length} 字符 · 档位“${level}”`;
+        sync.className = "bible-sync";
+      }
+    }
+  }
+
+  function applyBible(mode) {
+    const block = composeBible();
+    if (!block) { toast("角色卡还是空的", "warn"); return false; }
+    const pos = $("#pos");
+    if (mode === "replace") {
+      pos.value = block;
+    } else {
+      const current = pos.value.trim();
+      pos.value = current ? `${current.replace(/\s*,\s*$/, "")}, ${block}` : block;
+    }
+    S.promptDirty = true;
+    paintSyncState();
+    paintBiblePreview();
+    toast(mode === "replace" ? "正向已替换为角色卡" : "角色卡已插入正向", "ok");
+    return true;
+  }
+
+  /* ------------------------------------------------ 词条库（每项可增删改） */
+  async function loadPresets(force = false) {
+    if (S.presetsLoaded && !force) { paintWordEditor(); return; }
+    try {
+      const r = await api("/api/presets");
+      S.presets = r.presets || {};
+      S.presetsLoaded = true;
+    } catch (_) {
+      S.presets = S.presets || {};
+    }
+    paintWordEditor();
+  }
+
+  // 词条统一成 {en, zh, cat}；进提示词只用 en，zh 只做备注。
+  // 栏目可以显示中文（S.zhDisplay），读出来时再翻回英文。
+  function wordMaps() {
+    const en2zh = new Map();
+    const zh2en = new Map();
+    Object.values(S.presets || {}).forEach((list) => (list || []).forEach((w) => {
+      if (!w) return;
+      const en = typeof w === "string" ? w : String(w.en || "");
+      const zh = typeof w === "string" ? "" : String(w.zh || "");
+      if (!en) return;
+      if (zh && zh !== en) {
+        if (!en2zh.has(en.toLowerCase())) en2zh.set(en.toLowerCase(), zh);
+        if (!zh2en.has(zh)) zh2en.set(zh, en);
+      }
+    }));
+    return { en2zh, zh2en };
+  }
+
+  function splitTags(value) {
+    return String(value || "").split(",").map((s) => s.trim()).filter(Boolean);
+  }
+
+  function displayTags(value) {
+    if (!S.zhDisplay) return String(value || "");
+    const maps = wordMaps();
+    return splitTags(value).map((t) => maps.en2zh.get(t.toLowerCase()) || t).join(", ");
+  }
+
+  function toEnglishTags(value) {
+    if (!S.zhDisplay) return String(value || "").trim();
+    const maps = wordMaps();
+    const unknown = [];
+    const out = splitTags(value).map((t) => {
+      if (!/[\u4e00-\u9fa5]/.test(t)) return t;
+      const en = maps.zh2en.get(t);
+      if (en) return en;
+      unknown.push(t);
+      return t;
+    });
+    if (unknown.length) {
+      toast(`这几个中文还没对应英文：${unknown.slice(0, 3).join("、")}`, "warn");
+    }
+    return out.join(", ");
+  }
+
+  function wordsOf(field) {
+    const raw = Object.prototype.hasOwnProperty.call(S.presets, field) ? S.presets[field] : null;
+    const src = Array.isArray(raw) ? raw : (BIBLE_PRESETS[field] || []);
+    return src.map((w) => (typeof w === "string"
+      ? { en: w, zh: "", cat: "自定义" }
+      : { en: String(w.en || w.word || ""), zh: String(w.zh || ""), cat: String(w.cat || "自定义") }))
+      .filter((w) => w.en);
+  }
+
+  function wordsEn(field) {
+    return wordsOf(field).map((w) => w.en);
+  }
+
+  function parseWord(text) {
+    const raw = String(text || "").trim();
+    if (!raw) return null;
+    const [en, ...rest] = raw.split("|");
+    const zh = rest.join("|").trim();
+    return { en: en.trim(), zh: zh || "", cat: "自定义" };
+  }
+
+  function isCustomWords(field) {
+    return Object.prototype.hasOwnProperty.call(S.presets, field);
+  }
+
+  function paintWordEditor() {
+    const sel = $("#pm-field");
+    if (!sel) return;
+    const labels = (S.bible && S.bible.labels) || {};
+    const fields = Object.keys(labels).filter((k) => k !== "lewd" && (BIBLE_PRESETS[k] || isCustomWords(k)));
+    if (!fields.length) return;
+    const keep = sel.value;
+    sel.innerHTML = fields.map((k) => `<option value="${esc(k)}">${esc(labels[k] || k)}</option>`).join("");
+    if (fields.includes(keep)) sel.value = keep;
+    else sel.value = fields[0];
+    paintWordList();
+  }
+
+  function paintWordList() {
+    const sel = $("#pm-field");
+    const host = $("#pm-list");
+    if (!sel || !host) return;
+    const field = sel.value;
+    const words = wordsOf(field);
+    const pill = $("#pm-pill");
+    if (pill) pill.textContent = `${words.length} 条${isCustomWords(field) ? "（自定义）" : "（内置）"}`;
+    const q = ($("#pm-search") && $("#pm-search").value || "").trim().toLowerCase();
+    const label = (((S.bible || {}).labels) || {})[field] || field;
+    const groups = new Map();
+    words.forEach((w, i) => {
+      if (q && !`${w.en} ${w.zh}`.toLowerCase().includes(q)) return;
+      const cat = w.cat || "自定义";
+      if (!groups.has(cat)) groups.set(cat, []);
+      groups.get(cat).push({ ...w, i });
+    });
+    if (!groups.size) {
+      host.innerHTML = words.length
+        ? `<span class="tiny faint">没有匹配「${esc(q)}」的词条</span>`
+        : `<span class="tiny faint">这个字段还没有候选，下面加一条。</span>`;
+      return;
+    }
+    host.innerHTML = [...groups.entries()].map(([cat, items]) => `
+      <div class="pm-group">
+        <div class="pm-cat">${esc(cat)}<span class="tiny faint"> · ${items.length}</span></div>
+        <div class="pm-words">${items.map(({ en, zh, i }) => `
+          <span class="pm-chip"${S.pmEdit === i ? ' data-editing="1"' : ""}
+                ${S.pmEdit === i ? "" : `data-act="pm-use" data-idx="${i}" role="button" title="${esc(en)}｜点一下加到「${esc(label)}」"`}>
+            ${S.pmEdit === i
+              ? `<input class="pm-input" data-pm-input="${i}" value="${esc(zh ? `${en} | ${zh}` : en)}" spellcheck="false">`
+              : `<span class="pm-word">＋ ${esc(zh && zh !== en ? zh : en)}</span>${zh && zh !== en ? `<span class="pm-zh">${esc(en)}</span>` : ""}`}
+            ${S.pmEdit === i
+              ? `<button data-act="pm-ok" data-idx="${i}" title="保存">✓</button>
+                 <button data-act="pm-cancel" data-idx="${i}" title="取消">↺</button>`
+              : `<button data-act="pm-edit" data-idx="${i}" title="修改（英文 | 中文）">✎</button>
+                 <button data-act="pm-del" data-idx="${i}" title="删除这条">×</button>`}
+          </span>`).join("")}</div>
+      </div>`).join("");
+    const editing = host.querySelector("[data-pm-input]");
+    if (editing) { editing.focus(); editing.select(); }
+  }
+
+  function wordStartEdit(idx) {
+    S.pmEdit = Number(idx);
+    paintWordList();
+  }
+
+  function wordCommitEdit(idx, value) {
+    const field = $("#pm-field").value;
+    const words = wordsOf(field).slice();
+    const parsed = parseWord(value);
+    if (!parsed) {
+      words.splice(Number(idx), 1);
+    } else {
+      if (words.some((w, i) => i !== Number(idx) && w.en.toLowerCase() === parsed.en.toLowerCase())) {
+        toast("已有同样的英文词条", "warn");
+        return;
+      }
+      words[Number(idx)] = { ...words[Number(idx)], en: parsed.en, zh: parsed.zh || words[Number(idx)].zh };
+    }
+    S.pmEdit = null;
+    saveWords(field, words);
+  }
+
+  async function saveWords(field, options) {
+    try {
+      const r = await api("/api/presets", { field, options });
+      S.presets = r.presets || {};
+      S.presetsLoaded = true;
+      // 只刷新候选，不整块重绘，免得把还没保存的字段内容冲掉
+      refreshDatalists();
+      paintWordEditor();
+      toast(`已保存（${(r.options || []).length} 条）`, "ok");
+    } catch (err) {
+      toast(`保存失败：${err.message}`, "bad");
+    }
+  }
+
+  // 候选是全局默认（config/bible_presets.json），换角色卡不会动它。
+  function refreshDatalists() {
+    const host = $("#bible-fields");
+    if (!host) return;
+    host.querySelectorAll("datalist").forEach((dl) => {
+      const key = dl.id.replace(/^dl-/, "");
+      dl.innerHTML = wordsOf(key).map((v) => `<option value="${esc(v)}"></option>`).join("");
+    });
+  }
+
+  function fieldWordAdd(key) {
+    const input = document.getElementById(`bible-${key}`);
+    const current = input ? input.value.trim() : "";
+    const label = (((S.bible || {}).labels) || {})[key] || key;
+    const raw = window.prompt(`「${label}」新增候选词条\n格式：英文标签 | 中文备注`, current);
+    const parsed = parseWord(raw);
+    if (!parsed) return;
+    const words = wordsOf(key);
+    if (!words.some((w) => w.en.toLowerCase() === parsed.en.toLowerCase())) {
+      saveWords(key, [...words, parsed]);
+    } else {
+      toast("候选里已经有这条，直接帮你填进字段", "warn");
+    }
+    wordUseValue(key, parsed.en);
+  }
+
+  // 把某条候选追加到上面的字段输入框里（只拼英文）
+  function wordUseValue(key, wordEn) {
+    const el = document.getElementById(`bible-${key}`);
+    if (!el || !wordEn) return;
+    const label = (((S.bible || {}).labels) || {})[key] || key;
+    if (el.tagName === "SELECT") {
+      el.value = wordEn;
+      paintBiblePreview();
+      toast(`「${label}」已选 ${wordEn}`, "ok");
+      return;
+    }
+    const cur = String(el.value || "").trim();
+    if (String(wordEn).trim() === "（无）") {
+      el.value = "";
+      paintBiblePreview();
+      toast(`「${label}」已清空`, "ok");
+      return;
+    }
+    // 栏目显示中文时追加中文；英文词条照旧能对上
+    const token = displayTags(wordEn);
+    const has = cur.toLowerCase().includes(token.toLowerCase())
+      || cur.toLowerCase().includes(String(wordEn).toLowerCase());
+    if (has) {
+      toast(`「${label}」里已经有它了`, "warn");
+      return;
+    }
+    el.value = cur ? `${cur.replace(/\s*,\s*$/, "")}, ${token}` : token;
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 600);
+    paintBiblePreview();
+    toast(`已加到「${label}」（提示词里是 ${wordEn}）`, "ok");
+  }
+
+  function wordUse(idx) {
+    const field = $("#pm-field").value;
+    const word = wordsOf(field)[Number(idx)];
+    if (word) wordUseValue(field, word.en);
+  }
+
+  function fieldWordOpen(key) {
+    const panel = $("#word-editor");
+    if (panel) panel.open = true;
+    const sel = $("#pm-field");
+    if (sel) {
+      sel.value = key;
+      paintWordList();
+    }
+    if (panel) panel.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+
+  /* 字段下拉：列出这一类全部词条（分组 + 搜索），点一条只追加英文 */
+  function closeFieldMenus(except) {
+    $$(".combo-menu").forEach((m) => { if (m !== except) m.dataset.open = "0"; });
+  }
+
+  function paintFieldMenu(key) {
+    const box = document.getElementById(`cm-${key}`);
+    if (!box) return;
+    const q = (box.dataset.query || "").trim().toLowerCase();
+    const words = wordsOf(key).filter((w) => !q || `${w.en} ${w.zh}`.toLowerCase().includes(q));
+    const groups = new Map();
+    words.forEach((w) => {
+      const cat = w.cat || "自定义";
+      if (!groups.has(cat)) groups.set(cat, []);
+      groups.get(cat).push(w);
+    });
+    const cur = (document.getElementById(`bible-${key}`) || {}).value || "";
+    box.innerHTML = `<input class="cm-search" data-cm-search="${esc(key)}"
+        placeholder="搜词条（中文/英文）" value="${esc(box.dataset.query || "")}">
+      ${groups.size ? [...groups.entries()].map(([cat, items]) => `
+        <div class="cm-group"><div class="cm-cat">${esc(cat)}</div>
+          <div class="cm-items">${items.map((w) => {
+            const zh = w.zh && w.zh !== w.en ? w.zh : "";
+            return `<button class="cm-item" data-act="fw-pick" data-key="${esc(key)}"
+                    data-en="${esc(w.en)}" title="${esc(w.en)}"
+                    data-used="${cur.toLowerCase().includes(w.en.toLowerCase()) ? 1 : 0}">
+                    <span class="cm-zh">${esc(zh || w.en)}</span>${zh ? `<span class="cm-en">${esc(w.en)}</span>` : ""}
+                  </button>`;
+          }).join("")}
+          </div></div>`).join("") : `<div class="tiny faint">没有匹配的词条</div>`}`;
+    const search = box.querySelector("[data-cm-search]");
+    if (search) { search.focus(); search.setSelectionRange(search.value.length, search.value.length); }
+  }
+
+  function fieldMenuToggle(key) {
+    const box = document.getElementById(`cm-${key}`);
+    if (!box) return;
+    const open = box.dataset.open === "1";
+    closeFieldMenus(box);
+    if (open) { box.dataset.open = "0"; return; }
+    box.dataset.query = "";
+    paintFieldMenu(key);
+    box.dataset.open = "1";
+  }
+
+  function fieldMenuPick(key, en) {
+    wordUseValue(key, en);
+    const box = document.getElementById(`cm-${key}`);
+    if (box) {
+      paintFieldMenu(key);
+      box.dataset.open = "1";
+    }
+  }
+
+  function wordAdd() {
+    const field = $("#pm-field").value;
+    const input = $("#pm-new");
+    const parsed = parseWord(input.value);
+    if (!field || !parsed) { toast("先选字段，再写「英文标签 | 中文备注」", "warn"); return; }
+    const words = wordsOf(field);
+    if (words.some((w) => w.en.toLowerCase() === parsed.en.toLowerCase())) { toast("已经有这条了", "warn"); return; }
+    saveWords(field, [...words, parsed]);
+    input.value = "";
+  }
+
+  function wordDelete(idx) {
+    const field = $("#pm-field").value;
+    const words = wordsOf(field).slice();
+    words.splice(Number(idx), 1);
+    S.pmEdit = null;
+    saveWords(field, words);
+  }
+
+  function wordReset() {
+    const field = $("#pm-field").value;
+    const labels = (S.bible && S.bible.labels) || {};
+    if (!window.confirm(`把「${labels[field] || field}」这一栏清空？自定义词条会全部没了。`)) return;
+    saveWords(field, []);
+  }
+
+  /* ------------------------------------------------ 字段表（栏本身可增删改） */
+  function fieldSchema() {
+    return (S.bible && Array.isArray(S.bible.fields_list)) ? S.bible.fields_list : [];
+  }
+
+  function paintFieldList() {
+    const host = $("#fe-list");
+    if (!host) return;
+    const schema = fieldSchema();
+    const pill = $("#fe-pill");
+    if (pill) pill.textContent = `${schema.length} 栏`;
+    host.innerHTML = schema.length
+      ? schema.map((f) => `<span class="pm-chip" title="${esc(f.key)}">
+           <span class="pm-word">${esc(f.label)}</span>
+           <button data-act="fe-rename" data-key="${esc(f.key)}" title="改显示名">✎</button>
+           <button data-act="fe-del" data-key="${esc(f.key)}" title="删除这一栏">×</button>
+         </span>`).join("")
+      : `<span class="tiny faint">字段表读不出来，点「重新读取」试试。</span>`;
+  }
+
+  async function saveSchema(fields) {
+    try {
+      const r = await api("/api/fields", { fields });
+      S.bible = await api("/api/bible");
+      paintBible();
+      await loadPresets(true);
+      toast(`字段表已保存（${(r.fields || []).length} 栏）`, "ok");
+    } catch (err) {
+      toast(`保存失败：${err.message}`, "bad");
+    }
+  }
+
+  function nextFieldKey() {
+    const used = new Set(fieldSchema().map((f) => f.key));
+    for (let i = 1; i < 100; i += 1) {
+      const key = `field${i}`;
+      if (!used.has(key)) return key;
+    }
+    return `field${Date.now() % 100000}`;
+  }
+
+  function fieldAdd() {
+    const label = ($("#fe-label").value || "").trim();
+    if (!label) { toast("先写个字段名", "warn"); $("#fe-label").focus(); return; }
+    let key = ($("#fe-key").value || "").trim().toLowerCase();
+    if (!key) key = nextFieldKey();
+    if (!/^[a-z][a-z0-9_]{0,30}$/.test(key)) { toast("键名要英文小写开头，只含字母数字下划线", "warn"); return; }
+    if (fieldSchema().some((f) => f.key === key)) { toast("键名重复了", "warn"); return; }
+    const fields = fieldSchema().map((f) => ({ ...f }));
+    fields.push({ key, label, required: false });
+    saveSchema(fields);
+    $("#fe-label").value = "";
+    $("#fe-key").value = "";
+  }
+
+  function fieldRename(key) {
+    const cur = fieldSchema().find((f) => f.key === key);
+    if (!cur) return;
+    const next = (window.prompt(`「${cur.label}」的新显示名`, cur.label) || "").trim();
+    if (!next || next === cur.label) return;
+    const fields = fieldSchema().map((f) => (f.key === key ? { ...f, label: next } : { ...f }));
+    saveSchema(fields);
+  }
+
+  async function fieldDelete(key) {
+    const cur = fieldSchema().find((f) => f.key === key);
+    if (!cur) return;
+    if (fieldSchema().length <= 1) { toast("至少留一栏", "warn"); return; }
+    if (!window.confirm(`删除「${cur.label}」这一栏？它的候选词条也会一起清掉。`)) return;
+    const fields = fieldSchema().filter((f) => f.key !== key).map((f) => ({ ...f }));
+    try { await api("/api/presets", { field: key, options: [] }); } catch (_) { /* 清候选失败也继续 */ }
+    saveSchema(fields);
+  }
+
+  /* ------------------------------------------------ 角色卡库（增 / 删 / 选） */  async function loadCards(force = false) {
+    if (S.cards.length && !force) { paintCardSelect(); return; }
+    try {
+      const r = await api("/api/cards");
+      S.cards = r.items || [];
+    } catch (_) {
+      S.cards = S.cards || [];
+    }
+    paintCardSelect();
+  }
+
+  function paintCardSelect() {
+    const sel = $("#card-select");
+    if (!sel) return;
+    const head = `<option value="">＋ 角色卡库 · ${S.cards.length} 张</option>`;
+    sel.innerHTML = head + S.cards.map((c) => {
+      const lv = (c.fields || {}).lewd;
+      const tag = lv && lv !== "全年龄" && !String(c.name).includes(lv) ? ` · ${lv}` : "";
+      return `
+      <option value="${esc(c.id)}"${c.id === S.cardId ? " selected" : ""}
+        title="${esc(c.note || c.source || "")}">${esc(c.name)}${esc(tag)}</option>`;
+    }).join("");
+    sel.value = S.cardId || "";
+  }
+
+  function currentCard() { return S.cards.find((c) => c.id === S.cardId) || null; }
+
+  function cardLoad() {
+    const card = currentCard();
+    if (!card) { toast("先在下拉里选一张角色卡", "warn"); return; }
+    const fields = card.fields || {};
+    if (Object.keys(fields).length) {
+      Object.entries(fields).forEach(([key, value]) => {
+        const el = $(`#bible-fields [data-bible="${key}"]`);
+        if (el) el.value = key === "lewd" ? value : displayTags(value);
+      });
+      paintBiblePreview();
+    }
+    const text = (card.text || "").trim();
+    if (text) {
+      $("#pos").value = text;
+      S.promptDirty = true;
+      paintSyncState();
+    }
+    paintCardEdit();
+    paintBiblePreview();
+    toast(`已载入「${card.name}」`, "ok");
+  }
+
+  async function cardUpdate() {
+    const card = currentCard();
+    if (!card) { toast("先选一张卡，再改内容", "warn"); return; }
+    const name = ($("#card-name").value || "").trim() || card.name;
+    const text = ($("#card-text").value || "").trim();
+    try {
+      const r = await api("/api/cards", {
+        action: "save", id: card.id, name, text,
+        fields: bibleDraft(), source: card.source || "manual",
+      });
+      S.cards = r.items || [];
+      S.cardId = card.id;
+      paintCardSelect();
+      paintCardEdit();
+      toast(`已更新「${name}」`, "ok");
+    } catch (err) {
+      toast(`保存失败：${err.message}`, "bad");
+    }
+  }
+
+  async function cardNew() {
+    const name = ($("#card-name").value || "").trim();
+    if (!name) { toast("先给新卡写个名字", "warn"); $("#card-name").focus(); return; }
+    const text = ($("#card-text").value || "").trim() || composeBible();
+    try {
+      const r = await api("/api/cards", {
+        action: "save", name, text, fields: bibleDraft(), source: "manual",
+      });
+      S.cards = r.items || [];
+      S.cardId = r.card ? r.card.id : S.cardId;
+      paintCardSelect();
+      paintCardEdit();
+      toast(`新卡「${name}」已建好`, "ok");
+    } catch (err) {
+      toast(`新建失败：${err.message}`, "bad");
+    }
+  }
+
+  function cardRebuild() {
+    const text = composeBible();
+    $("#card-text").value = text;
+    toast("正文已按当前字段重建，记得点「保存修改」", "ok");
+  }
+
+  async function cardSaveCurrent() {
+    const named = ($("#card-name").value || "").trim();
+    const base = named || (currentCard() ? currentCard().name : "银发天使 · 新卡");
+    const name = named || (window.prompt("给这张角色卡起个名字", base) || "").trim();
+    if (!name) return;
+    const text = ($("#card-text").value || "").trim() || composeBible();
+    try {
+      const r = await api("/api/cards", {
+        action: "save", name, fields: bibleDraft(), text, source: "manual",
+      });
+      S.cards = r.items || [];
+      S.cardId = r.card ? r.card.id : S.cardId;
+      paintCardSelect();
+      paintCardEdit();
+      toast(`已保存「${name}」`, "ok");
+    } catch (err) {
+      toast(`保存失败：${err.message}`, "bad");
+    }
+  }
+
+  async function cardDelete() {
+    const card = currentCard();
+    if (!card) { toast("先选一张角色卡", "warn"); return; }
+    if (!window.confirm(`删除角色卡「${card.name}」？`)) return;
+    try {
+      const r = await api("/api/cards", { action: "delete", id: card.id });
+      S.cards = r.items || [];
+      S.cardId = "";
+      paintCardSelect();
+      toast("已删除", "ok");
+    } catch (err) {
+      toast(`删除失败：${err.message}`, "bad");
+    }
+  }
+
+  async function cardRename() {
+    const card = currentCard();
+    if (!card) { toast("先选一张角色卡", "warn"); return; }
+    const name = (window.prompt("新名字", card.name) || "").trim();
+    if (!name) return;
+    try {
+      const r = await api("/api/cards", { action: "rename", id: card.id, name });
+      S.cards = r.items || [];
+      paintCardSelect();
+      toast("已改名", "ok");
+    } catch (err) {
+      toast(`改名失败：${err.message}`, "bad");
+    }
+  }
+
+  async function histSaveCard(id) {
+    const item = histFind(id);
+    if (!item) return;
+    const name = (window.prompt("把这条历史存成角色卡，命名：", item.template || "历史角色卡") || "").trim();
+    if (!name) return;
+    try {
+      const r = await api("/api/cards", {
+        action: "save", name, text: item.positive || "", source: "history",
+        fields: {},
+      });
+      S.cards = r.items || [];
+      S.cardId = r.card ? r.card.id : S.cardId;
+      paintCardSelect();
+      toast(`已存入角色卡库：${name}`, "ok");
+    } catch (err) {
+      toast(`保存失败：${err.message}`, "bad");
+    }
+  }
+
+  async function loadBible(force = false) {
+    if (S.bible && !force) { paintBible(); return S.bible; }
+    try {
+      S.bible = await api("/api/bible");
+    } catch (err) {
+      S.bible = null;
+      $("#bible-pill").className = "pill bad";
+      $("#bible-pill").textContent = "读取失败";
+      $("#bible-hint").textContent = "读取设定表失败：" + err.message;
+      return null;
+    }
+    paintBible();
+    return S.bible;
+  }
+
+  // 色情程度：单选档位 → 一组固定标签，选档即插进拼装结果。
+  const LEWD_LEVELS = ["全年龄", "微色", "泳装", "内衣", "半裸", "全裸"];
+  const LEWD_TAGS = {
+    "全年龄": "",
+    "微色": "light blush, seductive smile, collarbone, off shoulder",
+    "泳装": "swimsuit, wet skin, water droplets, beach, sunlight",
+    "内衣": "adult woman, mature female, lingerie, black lace, garter belt, thighhighs, bedroom",
+    "半裸": "adult woman, mature female, topless, nipples, navel, arm covering chest, blush, bedroom",
+    "全裸": "adult woman, mature female, nude, nipples, navel, lying on bed, sheet, blush",
+  };
+
+  // 角色卡下拉候选：常用的直接选，想手写也照样能输（datalist 组合框）。
+  const BIBLE_PRESETS = {
+    trigger: [
+      "（无）", "zzAzusa", "Shirasu Azusa", "azusa \\(blue archive\\)",
+      "azusa \\(swimsuit\\) \\(blue archive\\)", "@m8style", "shiratama art",
+    ],
+    hair: [
+      "white hair, long hair, hair between eyes",
+      "silver white hair, very long hair, straight hair",
+      "black hair, long hair, straight hair, blunt bangs",
+      "blonde hair, twintails, ahoge",
+      "pink hair, wavy hair, sidelocks",
+    ],
+    eyes: [
+      "pink eyes, purple eyes",
+      "blue eyes, tareme",
+      "red eyes, sharp eyes",
+      "golden eyes, half closed eyes",
+      "green eyes, droopy eyes",
+      "heterochromia",
+    ],
+    outfit: [
+      "white jacket, black dress, sailor collar, yellow neckerchief",
+      "navy blue dress, white sailor collar, gold buttons",
+      "white one-piece swimsuit, halterneck, white frilled trim",
+      "school uniform, navy pleated skirt, black thighhighs",
+      "lingerie, black lace, garter belt",
+    ],
+    signature: [
+      "yellow halo, white wings, angel wings",
+      "purple flower, hair ornament, hair flower",
+      "black hair ribbon, gold halo",
+      "mole under eye, beauty mark",
+      "bandaid on cheek, cat hairpin",
+    ],
+    body: [
+      "adult woman, tall and slim, slender, long legs",
+      "adult woman, petite, slender build",
+      "tall, athletic, toned",
+      "adult woman, curvy, wide hips",
+    ],
+    personality: [
+      "gentle smile, calm",
+      "expressionless, kuudere",
+      "cheerful smile, open mouth",
+      "shy, blushing, looking away",
+    ],
+    extras: [
+      "soft pastel colors, fine lineart, depth of field",
+      "classroom, window, afternoon light",
+      "beach, blue sky, sunlight, lens flare",
+      "night, neon signs, rain wet street",
+      "bedroom, warm lamp light, sheet",
+    ],
+  };
+
+  function datalistFor(key) {
+    const extra = key === "trigger"
+      ? (S.library.loras || []).flatMap((l) => (l.triggers || []).filter((t) => /[\u4e00-\u9fa5@]/.test(t) || t.startsWith("@"))).slice(0, 12)
+      : [];
+    const seen = new Set();
+    const options = [...wordsEn(key), ...extra].filter((v) => {
+      const k = String(v).toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    return `<datalist id="dl-${esc(key)}">` + options.map((v) =>
+      `<option value="${esc(v)}"></option>`).join("") + `</datalist>`;
+  }
+
+  function paintBible() {
+    const b = S.bible;
+    if (!b) return;
+    const draft = S.bibleDraft || null;
+    S.bibleDraft = null;
+    const required = new Set(b.required || []);
+    const labels = b.labels || {};
+    const pill = $("#bible-pill");
+    pill.className = "pill " + (b.complete ? "ok" : "warn");
+    pill.textContent = b.complete ? "完整" : `缺 ${(b.missing || []).length} 项`;
+
+    $("#bible-fields").innerHTML = Object.keys(labels).map((key) => {
+      const stored = String((draft ? draft[key] : (b.fields || {})[key]) || "");
+      const value = key === "lewd" ? stored : displayTags(stored);
+      const control = key === "lewd"
+        ? `<select id="bible-lewd" data-bible="lewd">${LEWD_LEVELS.map((lv) =>
+            `<option value="${esc(lv)}"${(value || "全年龄") === lv ? " selected" : ""}>${esc(lv)}</option>`).join("")}</select>`
+        : `<div class="combo">
+             <input id="bible-${esc(key)}" data-bible="${esc(key)}"
+                    spellcheck="false" autocomplete="off" placeholder="选一个或直接手写"
+                    value="${esc(value)}">
+             <button class="btn ghost sm caret" data-act="fw-menu" data-key="${esc(key)}"
+                     title="从词条库选（英文自动追加）">词条 ▾</button>
+             <div class="combo-menu" id="cm-${esc(key)}"></div>
+           </div>`;
+      const tools = key === "lewd" ? "" : `<span class="field-tools">
+            <button class="link" data-act="fw-add" data-key="${esc(key)}"
+                    title="给这一栏加一条候选（会存成全局默认）">＋词条</button>
+            <button class="link" data-act="fw-open" data-key="${esc(key)}"
+                    title="打开这一栏的词条管理">管理</button>
+          </span>`;
+      return `<div class="field">
+        <div class="field-head">
+          <label for="bible-${esc(key)}">${esc(labels[key])}${required.has(key) ? " *" : ""}</label>
+          ${tools}
+        </div>
+        ${control}
+      </div>`;
+    }).join("");
+
+    const palette = b.palette || {};
+    $("#bible-palette").innerHTML = [["main", "主色"], ["accent", "点缀"], ["sub", "底色"]]
+      .map(([key, label]) => `
+        <div class="field">
+          <label for="palette-${key}">${label}</label>
+          <input id="palette-${key}" data-palette="${key}" type="color"
+                 value="${esc(palette[key] || "#888888")}">
+        </div>`).join("");
+
+    $$("#bible-fields input[data-bible]").forEach((el) => el.addEventListener("change", paintBiblePreview));
+
+    $("#bible-hint").textContent = b.updated_at
+      ? `上次保存：${fmtClock(b.updated_at)}` : "尚未保存过设定表。";
+    paintBiblePreview();
+    paintWordEditor();
+    paintFieldList();
+    paintCardEdit();
+  }
+
+  function paintCardEdit() {
+    const card = currentCard();
+    $("#card-name").value = card ? card.name : "";
+    $("#card-text").value = card ? (card.text || "") : "";
+    $("#card-text").placeholder = card
+      ? "卡片正文（可直接改，保存修改会写回这张卡）"
+      : "卡片正文：插入右框的就是这段，可手改";
+  }
+
+  async function saveBible() {
+    const data = { palette: {} };
+    $$("#bible-fields [data-bible]").forEach((el) => { data[el.dataset.bible] = el.value.trim(); });
+    $$("#bible-palette [data-palette]").forEach((el) => { data.palette[el.dataset.palette] = el.value; });
+    await run("保存设定表", async () => {
+      const r = await api("/api/asset", { kind: "bible", data });
+      S.bible = await api("/api/bible");
+      paintBible();
+      await refresh({ silent: true });
+      return (r.message || "设定表已保存") + "\n阶段 1 的「设定表字段齐全」会随下一次刷新更新。";
+    });
+  }
+
+  function paintSyncState() {
+    const note = $("#render-note");
+    const dirty = S.promptDirty;
+    $$(".resync").forEach((btn) => { btn.hidden = !dirty; });
+    if (dirty) {
+      note.textContent = "已手动编辑：改字段不会再覆盖，点「跟随模板」重新同步";
+      return;
+    }
+    const missing = S.gen.missing || [];
+    note.textContent = missing.length
+      ? "未填占位符：" + missing.join("、")
+      : "已按模板同步";
+  }
+
+  let autoRenderTimer = null;
+
+  function scheduleAutoRender() {
+    // Typing in a field re-renders after a short pause, but never over a prompt
+    // the operator has edited by hand.
+    if (S.promptDirty) return;
+    clearTimeout(autoRenderTimer);
+    autoRenderTimer = setTimeout(() => { renderPrompt({ silent: true }); }, 420);
+  }
+
+  async function renderPrompt({ silent = false } = {}) {
+    const body = async () => {
+      if (!S.prompts) await loadPrompts();
+      const values = readFields();
+      S.tplValues[S.tplKey] = values;
+      const r = await api("/api/prompt", { key: S.tplKey, values });
+      $("#pos").value = r.positive || "";
+      $("#neg").value = r.negative || "";
+      S.gen.missing = r.missing || [];
+      S.promptDirty = false;
+      paintSyncState();
+      fitPromptBoxes();
+      return `已渲染「${r.title || S.tplKey}」`;
+    };
+    if (silent) {
+      try { await body(); }
+      catch (err) {
+        $("#render-note").textContent = "自动同步失败：" + err.message;
+      }
+      return;
+    }
+    await run("渲染提示词", body);
+  }
+
+  function readOptions() {
+    const options = {};
+    const w = num($("#opt-width").value);
+    const h = num($("#opt-height").value);
+    const steps = num($("#opt-steps").value);
+    const cfg = num($("#opt-cfg").value);
+    const seed = num($("#opt-seed").value);
+    const batch = num($("#opt-batch").value);
+    if (w) options.width = clamp(w, 256, 2048);
+    if (h) options.height = clamp(h, 256, 2048);
+    if (steps) options.steps = clamp(steps, 1, 120);
+    if (cfg) options.cfg = clamp(cfg, 1, 20);
+    if (batch) options.batch = clamp(batch, 1, 4);
+    options.seed = (seed === null || seed < 0) ? -1 : seed;
+
+    const prof = profileMap()[currentTemplate().params_key] || {};
+    if (prof.sampler) options.sampler = prof.sampler;
+    if (prof.scheduler) options.scheduler = prof.scheduler;
+    return options;
+  }
+
+  function baselineInfo() {
+    const assets = (S.state && S.state.stages && S.state.stages.assets) || {};
+    const base = assets.baseline;
+    if (!base || !base.elapsed_s) return null;
+    return {
+      elapsed: Number(base.elapsed_s) || 0,
+      width: Number(base.width) || 1024,
+      height: Number(base.height) || 1024,
+      steps: Number(base.steps) || 40,
+      peak: Number(base.vram_peak_mb) || 0,
+    };
+  }
+
+  function estimateSeconds() {
+    const base = baselineInfo();
+    const w = num($("#opt-width").value);
+    const h = num($("#opt-height").value);
+    const batch = num($("#opt-batch").value) || 1;
+    if (!base || !w || !h) return null;
+    const steps = num($("#opt-steps").value) || base.steps;
+    const pixels = (w * h) / (base.width * base.height);
+    return Math.max(1, Math.round(base.elapsed * pixels * (steps / base.steps) * batch));
+  }
+
+  function paintEstimate() {
+    const base = baselineInfo();
+    const est = estimateSeconds();
+    $("#gen-est").textContent = est && base
+      ? `预计 ~${est}s（基准 ${base.elapsed}s @ ${base.width}² × ${base.steps} 步）`
+      : "";
+
+    const w = num($("#opt-width").value) || 0;
+    const h = num($("#opt-height").value) || 0;
+    const batch = num($("#opt-batch").value) || 1;
+    const megapixels = (w * h) / 1e6;
+    let warn = "";
+    if (megapixels * batch > 3.0) {
+      warn = "超过 3MP：16GB 显存大概率 OOM，建议单张 ≤ 1536²";
+    } else if (megapixels > 1.2 && batch > 1) {
+      warn = "多张 + 超过 1.2MP：显存可能吃紧，建议先跑 1 张";
+    } else if (megapixels > 1.2) {
+      warn = `超过基准分辨率：耗时按面积增长，显存峰值会高于基准 ${base ? base.peak : "—"} MB`;
+    }
+    const risk = $("#gen-risk");
+    risk.hidden = !warn;
+    risk.textContent = warn;
+  }
+
+  function revealShots() {
+    if (S.tab !== "studio") return;
+    const box = $("#gen-shots");
+    const rect = box.getBoundingClientRect();
+    if (rect.top > window.innerHeight - 80 || rect.bottom < 0) {
+      box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }
+
+  function setGenBusy(busy) {
+    S.gen.busy = busy;
+    $("#gen-btn").disabled = busy;
+    $("#gen-btn").textContent = busy ? "生成中…" : "开始生成";
+    $("#gen-stop").hidden = !busy;
+    $("#gen-progress").hidden = !busy;
+  }
+
+  function showGenError(message) {
+    const el = $("#gen-error");
+    el.hidden = !message;
+    el.textContent = message || "";
+  }
+
+  function comfyImageUrl(out) {
+    const q = new URLSearchParams({
+      source: "comfy", filename: out.filename,
+      subfolder: out.subfolder || "", type: out.type || "output",
+    });
+    return "/api/image?" + q.toString();
+  }
+
+  async function generate() {
+    if (S.gen.busy) return;
+    if (!comfyOnline()) { toast("ComfyUI 未运行，先在开始页启动", "bad"); switchTab("home"); return; }
+
+    // Empty prompt: render from the template first instead of bouncing the user.
+    if (!$("#pos").value.trim()) await renderPrompt({ silent: true });
+    const positive = $("#pos").value.trim();
+    const negative = $("#neg").value.trim();
+    if (!positive) {
+      toast("这个模板渲染后仍为空，请先填写提示词", "bad");
+      $("#pos").focus();
+      return;
+    }
+    const missing = S.gen.missing || [];
+    if (missing.length) {
+      const head = missing.slice(0, 3).join("、");
+      toast(`还有 ${missing.length} 个占位符未填：${head}${missing.length > 3 ? "…" : ""}`, "warn");
+    }
+
+    showGenError("");
+    S.tplValues[S.tplKey] = readFields();
+    setGenBusy(true);
+    task.start("提交出图任务");
+    try {
+        const r = await api("/api/generate", {
+        template: S.tplKey,
+        values: S.tplValues[S.tplKey],
+        options: readOptions(),
+        workflow: currentTemplate().workflow || S.workflowOverride || "",
+        loras: loraStackPayload(),
+        prompt: { positive, negative },
+      });
+      S.gen.historyId = r.history_id || "";
+      S.gen.promptId = r.prompt_id;
+      S.gen.seed = r.options && r.options.seed;
+      S.gen.options = r.options || {};
+      S.gen.meta = {
+        template: r.template, workflow: r.workflow,
+        seed: r.options && r.options.seed,
+        steps: r.options && r.options.steps,
+        cfg: r.options && r.options.cfg,
+        width: r.options && r.options.width,
+        height: r.options && r.options.height,
+        sampler: r.options && r.options.sampler_name,
+      };
+      S.gen.outputs = [];
+      S.gen.error = "";
+      S.gen.state = "queued";
+      S.gen.startedAt = Date.now();
+      S.gen.elapsed = null;
+      rememberJob();
+      paintGenShots();
+      $("#gen-line").textContent = `已提交 · 种子 ${S.gen.seed ?? "默认"} · ${S.gen.options.width || "?"}×${S.gen.options.height || "?"}`;
+      toast(`已提交，种子 ${S.gen.seed ?? "默认"}`, "ok");
+      pollJob(r.prompt_id);
+    } catch (err) {
+      setGenBusy(false);
+      task.fail(err);
+      showGenError(err.message);
+      toast(err.message, "bad");
+    }
+  }
+
+  function stopPolling() {
+    // The first probe is a timeout, the rest an interval: both must be cleared
+    // or an "interrupt" leaves one pending tick that writes to stale state.
+    if (S.gen.timer) { clearInterval(S.gen.timer); S.gen.timer = null; }
+    if (S.gen.delay) { clearTimeout(S.gen.delay); S.gen.delay = null; }
+  }
+
+  function pollJob(promptId) {
+    stopPolling();
+    const began = Date.now();
+    let misses = 0;
+    const tick = async () => {
+      if (Date.now() - began > 30 * 60 * 1000) {
+        stopPolling(); finishJob({ state: "error", message: "任务超时（30 分钟）" }); return;
+      }
+      let job;
+      try {
+        job = await api("/api/job?prompt_id=" + encodeURIComponent(promptId));
+        misses = 0;
+      } catch (err) {
+        if (++misses >= 5) { stopPolling(); finishJob({ state: "error", message: err.message }); }
+        return;
+      }
+      const elapsed = ((Date.now() - began) / 1000).toFixed(1);
+      $("#gen-line").textContent = job.state === "queued"
+        ? (job.message || "排队中")
+        : job.state === "running" ? `正在渲染 · ${elapsed}s`
+        : job.state === "done" ? `完成 · 渲染 ${job.elapsed_s ?? elapsed}s`
+        : (job.message || "等待中");
+      task.meta(`${job.state === "done" ? "完成" : job.message || "渲染中"} · ${elapsed}s`);
+      if (job.state === "done" || job.state === "error") { stopPolling(); finishJob(job); }
+    };
+    S.gen.delay = setTimeout(tick, 500);
+    S.gen.timer = setInterval(tick, 1500);
+  }
+
+  function finishJob(job) {
+    setGenBusy(false);
+    S.gen.state = job.state;
+    if (job.state === "done") {
+      S.gen.outputs = (job.outputs || []).filter((o) => o.kind === "image");
+      if (S.gen.historyId && S.gen.outputs.length) {
+        api("/api/history/attach", { id: S.gen.historyId, outputs: S.gen.outputs })
+          .then(() => { S.library.items = []; })
+          .catch(() => {});
+      }
+      S.gen.elapsed = job.elapsed_s;
+      paintGenShots();
+      revealShots();
+      const count = S.gen.outputs.length;
+      if (count) {
+        task.done(true, `种子 ${S.gen.seed ?? "默认"} · ${count} 张\n可点图片查看大图，或「保存到项目」归档。`,
+          "出图完成");
+        toast(`出图完成 · ${count} 张`, "ok");
+      } else {
+        task.done(false, "任务完成但没有图片输出（检查工作流是否有 SaveImage）。", "无产出");
+        showGenError("任务完成但没有图片输出。");
+      }
+    } else {
+      const message = job.message || "出图失败";
+      showGenError(message);
+      task.fail(new Error(message));
+      toast(message, "bad");
+    }
+  }
+
+  /* ------------------------------------------------------- session restore */
+  const LAST_JOB_KEY = "studio.lastJob";
+
+  function rememberJob() {
+    try {
+      sessionStorage.setItem(LAST_JOB_KEY, JSON.stringify({
+        promptId: S.gen.promptId, seed: S.gen.seed, options: S.gen.options,
+        meta: S.gen.meta, template: S.tplKey, startedAt: S.gen.startedAt,
+        prompt: { positive: $("#pos").value, negative: $("#neg").value },
+        values: S.tplValues[S.tplKey] || {},
+      }));
+    } catch (_) { /* private mode: results simply do not survive a reload */ }
+  }
+
+  function forgetJob() {
+    try { sessionStorage.removeItem(LAST_JOB_KEY); } catch (_) { /* ignore */ }
+    stopPolling();
+    S.gen.promptId = "";
+    S.gen.outputs = [];
+    S.gen.seed = null;
+    S.gen.elapsed = null;
+    setGenBusy(false);
+    paintGenShots();
+    $("#gen-line").textContent = "";
+    showGenError("");
+  }
+
+  function restoreJobToForm(saved) {
+    if (saved.template && templateMap()[saved.template]) {
+      S.tplKey = saved.template;
+      $("#tpl").value = saved.template;
+      S.tplValues[saved.template] = saved.values || {};
+      paintTemplateForm();
+      syncOptionsFromTemplate();
+    }
+    if (saved.prompt) {
+      $("#pos").value = saved.prompt.positive || "";
+      $("#neg").value = saved.prompt.negative || "";
+    }
+    const o = saved.options || {};
+    if (o.width) $("#opt-width").value = o.width;
+    if (o.height) $("#opt-height").value = o.height;
+    if (o.steps) $("#opt-steps").value = o.steps;
+    if (o.cfg) $("#opt-cfg").value = o.cfg;
+    if (saved.seed !== null && saved.seed !== undefined) $("#opt-seed").value = saved.seed;
+    paintEstimate();
+  }
+
+  async function restoreLastJob() {
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(LAST_JOB_KEY) || "null"); }
+    catch (_) { saved = null; }
+    if (!saved || !saved.promptId) return;
+
+    restoreJobToForm(saved);
+    S.gen.promptId = saved.promptId;
+    S.gen.seed = saved.seed ?? null;
+    S.gen.options = saved.options || {};
+    S.gen.meta = saved.meta || {};
+    S.gen.startedAt = saved.startedAt || Date.now();
+
+    let job = null;
+    try { job = await api("/api/job?prompt_id=" + encodeURIComponent(saved.promptId)); }
+    catch (_) { job = null; }
+    if (!job) return;
+
+    if (job.state === "queued" || job.state === "running") {
+      setGenBusy(true);
+      $("#gen-line").textContent = "已恢复上次任务：仍在渲染…";
+      task.start("恢复上次出图任务");
+      pollJob(saved.promptId);
+      return;
+    }
+    if (job.state === "done" && (job.outputs || []).length) {
+      S.gen.outputs = job.outputs.filter((o) => o.kind === "image");
+      S.gen.elapsed = job.elapsed_s;
+      paintGenShots();
+      $("#gen-line").textContent = `已恢复上次结果 · 种子 ${S.gen.seed ?? "?"}`
+        + (S.gen.elapsed ? ` · 渲染 ${S.gen.elapsed}s` : "");
+      toast("已恢复上次出图结果", "ok");
+      return;
+    }
+    $("#gen-line").textContent = "上次任务已结束或产物已被清理";
+  }
+
+  function paintGenShots() {
+    const box = $("#gen-shots");
+    $("#gen-clear").hidden = !S.gen.outputs.length;
+    if (!S.gen.outputs.length) { box.innerHTML = ""; return; }
+    box.innerHTML = S.gen.outputs.map((out, idx) => `
+      <figure class="shot">
+        <img src="${esc(comfyImageUrl(out))}" alt="${esc(out.filename)}" loading="lazy"
+             data-act="lightbox-gen" data-idx="${idx}">
+        <figcaption>
+          <span class="name mono" title="${esc(out.filename)}">${esc(out.filename)}</span>
+          <span class="faint tiny">${esc(S.gen.options.width || "?")}×${esc(S.gen.options.height || "?")}
+            · 种子 ${esc(S.gen.seed ?? "?")}</span>
+          <span class="ops">
+            <button class="link" data-act="save-illust" data-idx="${idx}">保存到项目</button>
+            <button class="link" data-act="reuse-seed" data-idx="${idx}">同种子再生成</button>
+          </span>
+        </figcaption>
+      </figure>`).join("");
+  }
+
+  async function saveIllust(idx) {
+    const out = S.gen.outputs[idx];
+    if (!out) return;
+    const meta = {
+      ...S.gen.meta,
+      prompt: $("#pos").value.trim(),
+      negative: $("#neg").value.trim(),
+      prompt_id: S.gen.promptId,
+      elapsed_s: S.gen.elapsed,
+    };
+    await run("保存到项目", async () => {
+      const r = await api("/api/illust", { source: out, meta });
+      await refresh({ silent: true });
+      if (S.tab === "gallery") loadGallery();
+      toast(`已归档 ${r.entry.file}`, "ok");
+      return `已写入 ${r.entry.file}\n阶段 3 的终稿与配方记录各 +1。`;
+    });
+  }
+
+  function reuseSeed() {
+    const seed = S.gen.seed;
+    if (seed == null) { toast("这次生成没有记录种子", "bad"); return; }
+    $("#opt-seed").value = seed;
+    toast(`已锁定种子 ${seed}，按同一配方再出一张`, "ok");
+    generate();
+  }
+
+  /* ------------------------------------------------------------- gallery */
+  async function loadGallery(force = false) {
+    if (S.galleryLoading) return;
+    if (!force && S.gallery && Date.now() - (S.gallery.loadedAt || 0) < 8000 && S.tab === "gallery") {
+      paintGallery();
+      return;
+    }
+    S.galleryLoading = true;
+    $("#gallery-note").textContent = "正在扫描输出与项目目录…";
+    try {
+      const data = await api("/api/gallery");
+      data.loadedAt = Date.now();
+      S.gallery = data;
+      S.galleryError = "";
+    } catch (err) {
+      S.galleryError = err.message;
+      S.gallery = null;
+    }
+    S.galleryLoading = false;
+    paintGallery();
+  }
+
+  function galleryItems() {
+    const items = (S.gallery && S.gallery.items) || [];
+    return S.galleryFilter === "all" ? items : items.filter((i) => i.source === S.galleryFilter);
+  }
+
+  function paintGallery() {
+    const filters = $("#gallery-filters");
+    const grid = $("#gallery-grid");
+    const note = $("#gallery-note");
+
+    if (!S.gallery) {
+      filters.innerHTML = "";
+      $("#gallery-total").textContent = "";
+      grid.innerHTML = `<div class="empty"><b>${S.galleryError ? "读取失败" : "还没有产出"}</b>
+        ${esc(S.galleryError || "去创作页生成第一张图，或在 ComfyUI 里跑一次。")}</div>`;
+      note.textContent = S.galleryError ? "" : "";
+      return;
+    }
+
+    const counts = S.gallery.counts || {};
+    const chips = [
+      { key: "all", label: "全部", n: S.gallery.total || 0 },
+      ...S.gallery.scanned.filter((s) => (counts[s.source] || 0) > 0)
+        .map((s) => ({ key: s.source, label: s.label, n: counts[s.source] })),
+    ];
+    if (!chips.some((c) => c.key === S.galleryFilter)) S.galleryFilter = "all";
+    filters.innerHTML = chips.map((c) => `
+      <button class="chipbtn" data-act="gallery-filter" data-filter="${esc(c.key)}"
+        aria-pressed="${S.galleryFilter === c.key}">${esc(c.label)}
+        <span class="faint">${c.n}</span></button>`).join("");
+    $("#gallery-total").textContent = S.gallery.total ? `${S.gallery.total} 个文件` : "";
+
+    const items = galleryItems();
+    if (!items.length) {
+      grid.innerHTML = `<div class="empty"><b>这个来源还没有图片</b>换个筛选，或去创作页生成。</div>`;
+    } else {
+      grid.innerHTML = items.map((item, idx) => `
+        <figure class="tile">
+          <img src="${esc(item.url)}" alt="${esc(item.name)}" loading="lazy"
+               data-act="lightbox-gallery" data-idx="${idx}">
+          <div class="tile-ops">
+            <button class="chipbtn" data-act="lightbox-gallery" data-idx="${idx}">查看</button>
+            ${item.source === "comfy"
+              ? `<button class="chipbtn" data-act="tile-save" data-idx="${idx}">归档</button>` : ""}
+            <button class="chipbtn" data-act="tile-download" data-idx="${idx}">下载</button>
+            <button class="chipbtn" data-act="tile-reveal" data-idx="${idx}">文件夹</button>
+          </div>
+          <figcaption>
+            <span class="name">${esc(item.name)}</span>
+            <span class="faint tiny">${esc(item.source_label)} · ${fmtBytes(item.size)} · ${fmtClock(item.mtime)}</span>
+          </figcaption>
+        </figure>`).join("");
+    }
+    note.textContent = `最近扫描：${fmtClock(S.gallery.generated_at)} · 输出目录与项目目录合并展示`;
+  }
+
+  async function tileSave(idx) {
+    const item = galleryItems()[idx];
+    if (!item) return;
+    await run("归档到项目", async () => {
+      const r = await api("/api/illust", {
+        source: { filename: item.name, subfolder: item.subfolder || "", type: item.type || "output" },
+        meta: { workflow: "gallery", prompt: "", template: "" },
+      });
+      loadGallery(true);
+      await refresh({ silent: true });
+      toast(`已归档 ${r.entry.file}`, "ok");
+      return `已写入 ${r.entry.file}`;
+    });
+  }
+
+  /* ------------------------------------------------------------- files */
+  function downloadImage(url, name) {
+    const anchor = document.createElement("a");
+    anchor.href = url + (url.includes("?") ? "&" : "?") + "download=1";
+    anchor.download = name || "";
+    anchor.rel = "noopener";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    toast(`开始下载 ${name || "图片"}`, "ok");
+  }
+
+  function downloadGallery(idx) {
+    const item = galleryItems()[idx];
+    if (item) downloadImage(item.url, item.name);
+  }
+
+  async function revealSource(params) {
+    await run("在文件夹中定位", async () => {
+      const r = await api("/api/action", { action: "reveal", params });
+      return r.message || "已定位";
+    });
+  }
+
+  function revealGallery(idx) {
+    const item = galleryItems()[idx];
+    if (!item) return;
+    revealSource(item.source === "comfy"
+      ? { source: "comfy", filename: item.name, subfolder: item.subfolder || "" }
+      : { source: "project", rel: item.rel });
+  }
+
+  function downloadCurrent() {
+    const item = S.lightbox && S.lightbox.list[S.lightbox.idx];
+    if (item) downloadImage(item.url, item.name);
+  }
+
+  function revealCurrent() {
+    const item = S.lightbox && S.lightbox.list[S.lightbox.idx];
+    if (item && item.source) revealSource(item.source);
+  }
+
+  /* ------------------------------------------------------------- lightbox */
+  function openLightbox(list, idx) {
+    if (!list || !list.length) return;
+    S.lightbox = { list, idx: clamp(idx, 0, list.length - 1) };
+    paintLightbox();
+    $("#lightbox").dataset.show = "1";
+  }
+  function paintLightbox() {
+    const lb = S.lightbox;
+    if (!lb) return;
+    const item = lb.list[lb.idx];
+    $("#lb-img").src = item.url;
+    $("#lb-img").alt = item.name;
+    $("#lb-name").textContent = item.name;
+    $("#lb-meta").textContent = `${lb.idx + 1} / ${lb.list.length}`
+      + (item.meta ? " · " + item.meta : "");
+    $(".lb-prev").hidden = lb.list.length < 2;
+    $(".lb-next").hidden = lb.list.length < 2;
+  }
+  function closeLightbox() {
+    S.lightbox = null;
+    $("#lightbox").dataset.show = "0";
+    $("#lb-img").src = "";
+  }
+  function navLightbox(delta) {
+    const lb = S.lightbox;
+    if (!lb) return;
+    lb.idx = (lb.idx + delta + lb.list.length) % lb.list.length;
+    paintLightbox();
+  }
+  function genLightboxList() {
+    return S.gen.outputs.map((o) => ({
+      url: comfyImageUrl(o), name: o.filename,
+      meta: `${S.gen.options.width || "?"}×${S.gen.options.height || "?"} · 种子 ${S.gen.seed ?? "?"}`,
+      source: { source: "comfy", filename: o.filename, subfolder: o.subfolder || "" },
+    }));
+  }
+  function galleryLightboxList() {
+    return galleryItems().map((i) => ({
+      url: i.url, name: i.name,
+      meta: `${i.source_label} · ${fmtBytes(i.size)} · ${i.mtime}`,
+      source: i.source === "comfy"
+        ? { source: "comfy", filename: i.name, subfolder: i.subfolder || "" }
+        : { source: "project", rel: i.rel },
+    }));
+  }
+
+  /* ------------------------------------------------------------- models */
+  async function loadModels(force = false) {
+    if (S.models && !force) { paintModels(); return S.models; }
+    try {
+      S.models = await api("/api/models");
+    } catch (err) {
+      $("#model-list").innerHTML = `<div class="empty"><b>读取失败</b>${esc(err.message)}</div>`;
+      return null;
+    }
+    paintModels();
+    return S.models;
+  }
+
+  function paintModels() {
+    const d = S.models;
+    if (!d) return;
+    const o = d.ollama || {};
+    const models = o.models || [];
+    const gpu = d.gpu;
+    const loaded = models.filter((m) => m.loaded);
+    const ollamaVram = loaded.reduce((sum, m) => sum + (m.vram || 0), 0);
+
+    const card = (k, v, sub, extra = "") =>
+      `<div class="metric"><div class="k">${esc(k)}</div><div class="v">${v}</div>
+       ${sub ? `<div class="s">${sub}</div>` : ""}${extra}</div>`;
+
+    const vramPct = gpu && gpu.total_mb ? clamp(gpu.used_mb / gpu.total_mb * 100, 0, 100) : 0;
+    $("#model-metrics").innerHTML = [
+      card("显存", gpu ? `${(gpu.used_mb / 1024).toFixed(1)} <span class="faint tiny">/ ${(gpu.total_mb / 1024).toFixed(0)} GB</span>` : "未检测到 GPU",
+        gpu ? `当前占用 ${vramPct.toFixed(0)}%` : "nvidia-smi 不可用",
+        gpu ? `<div class="meter"><i style="width:${vramPct.toFixed(1)}%"></i></div>` : ""),
+      card("Ollama", o.online ? `<span class="pill ok">在线</span>` : `<span class="pill bad">不可达</span>`,
+        `${esc(o.host || "")}`),
+      card("已加载模型", String(loaded.length),
+        ollamaVram ? `占用 ${(ollamaVram / 1e9).toFixed(1)} GB 显存` : "当前没有常驻模型"),
+      card("ComfyUI", d.comfyui && d.comfyui.online ? '<span class="pill ok">在线</span>' : '<span class="pill mute">未运行</span>',
+        "释放显存不会停止服务"),
+    ].join("");
+
+    $("#model-count").textContent = models.length ? `${models.length} 个` : "";
+    $("#ollama-status").textContent = o.online ? "keep_alive " + (o.keep_alive || "15m") : "";
+    $("#models-updated").textContent = "更新于 " + nowClock();
+
+    if (!models.length) {
+      $("#model-list").innerHTML = `<div class="empty"><b>没有找到本地模型</b>
+        ${o.online ? "用 ollama pull 拉一个模型后点刷新。" : "Ollama 未运行：" + esc(o.host || "")}</div>`;
+    } else {
+      $("#model-list").innerHTML = models.map((m) => `
+        <div class="model-row" data-loaded="${m.loaded ? 1 : 0}">
+          <div>
+            <div class="model-name">${esc(m.name)}
+              ${m.loaded
+                ? `<span class="pill ok">已加载 ${(m.vram / 1e9).toFixed(1)} GB</span>`
+                : `<span class="pill mute">未加载</span>`}</div>
+            <div class="model-meta">
+              <span>${esc(m.params || "参数量未知")}</span>
+              ${m.quant ? `<span>${esc(m.quant)}</span>` : ""}
+              <span>${(m.size / 1e9).toFixed(1)} GB 磁盘</span>
+              ${m.loaded && m.expires_at ? `<span>驻留至 ${fmtClock(m.expires_at)}</span>` : ""}
+            </div>
+          </div>
+          <div class="model-actions">
+            ${m.loaded
+              ? `<button class="btn sm" data-act="model-unload" data-name="${esc(m.name)}">卸载</button>`
+              : `<button class="btn sm" data-act="model-load" data-name="${esc(m.name)}">加载</button>`}
+          </div>
+        </div>`).join("");
+    }
+
+    $("#model-hint").textContent = o.online
+      ? "加载 = 把权重读进显存并按 keep_alive 驻留；卸载 = 立刻释放。"
+        + "显存不够时 Ollama 会挤掉已加载的其它模型（例如 27B 与 9B 无法同时驻留），"
+        + "这是它自己的调度，不是控制台的行为。"
+      : "Ollama 默认监听 127.0.0.1:11434，可在 config/studio-env.ps1 改 STUDIO_OLLAMA_HOST。";
+  }
+
+  async function modelAction(kind, name) {
+    if (!name) return;
+    await run(kind === "load" ? `加载 ${name}` : `卸载 ${name}`, async () => {
+      const r = await api(`/api/models/${kind}`, { name });
+      await loadModels(true);
+      await refresh({ silent: true });
+      return r.message || "完成";
+    });
+  }
+
+  /* ------------------------------------------------------------- fixes */
+  async function applyFix(id) {
+    const finding = ((S.report && S.report.findings) || []).find((f) => f.id === id);
+    if (!finding || !finding.fix) { toast("这个检查项没有一键修复", "bad"); return; }
+    const fix = finding.fix;
+    if (fix.kind === "goto") {
+      switchTab(fix.tab || "studio");
+      toast("已跳到对应页面", "ok");
+      return;
+    }
+    if (fix.kind === "copy") {
+      copyText(fix.text || finding.evidence || "", "修复信息");
+      return;
+    }
+    if (fix.confirm && !window.confirm(fix.confirm)) return;
+    await run(fix.label || "一键修复", async () => {
+      const r = await api("/api/fix", { id });
+      const rep = await api("/api/audit", { deep: false });
+      S.report = rep;
+      paintReport();
+      await refresh({ silent: true });
+      if (S.tab === "models") loadModels(true);
+      return `${r.message || "已完成"}\n已重新审计：${rep.score}/100（${rep.grade}）`;
+    });
+  }
+
+  /* ------------------------------------------------------------- health */
+  async function loadReport() {
+    try {
+      S.report = await api("/api/report");
+    } catch (err) {
+      S.report = null;
+      S.reportError = err.message;
+    }
+    paintReport();
+  }
+
+  function paintReport() {
+    const r = S.report;
+    const arc = $("#score-arc");
+    const numEl = $("#score-num");
+    const gradeEl = $("#score-grade");
+    const statsEl = $("#score-stats");
+    const timeEl = $("#report-time");
+
+    if (!r || r.score == null) {
+      arc.setAttribute("stroke-dashoffset", "326.7");
+      arc.style.stroke = "var(--line-2)";
+      numEl.textContent = "—";
+      gradeEl.textContent = "尚未检查";
+      statsEl.innerHTML = "";
+      timeEl.textContent = "";
+      paintFindings();
+      return;
+    }
+
+    const score = Number(r.score) || 0;
+    const tone = score >= 90 ? "var(--ok)" : score >= 70 ? "var(--warn)" : "var(--bad)";
+    arc.style.stroke = tone;
+    arc.setAttribute("stroke-dashoffset", String(326.7 * (1 - clamp(score, 0, 100) / 100)));
+    numEl.textContent = String(score);
+    gradeEl.textContent = `/100 · ${r.grade || ""}`;
+    const s = r.summary || {};
+    statsEl.innerHTML = `
+      <span>通过 <b>${s.pass ?? 0}</b></span>
+      <span>警告 <b>${s.warn ?? 0}</b></span>
+      <span>失败 <b>${s.fail ?? 0}</b></span>
+      <span>共 <b>${s.total ?? 0}</b></span>`;
+    timeEl.textContent = fmtClock(r.generated_at);
+    paintFindings();
+  }
+
+  function paintFindings() {
+    const box = $("#findings");
+    const r = S.report;
+    $("#audit-filters").innerHTML = [
+      { key: "fail", label: "仅看问题" },
+      { key: "all", label: "全部" },
+      { key: "pass", label: "已通过" },
+    ].map((f) => `<button class="chipbtn" data-act="audit-filter" data-filter="${f.key}"
+      aria-pressed="${S.auditFilter === f.key}">${f.label}</button>`).join("");
+
+    if (!r || !(r.findings || []).length) {
+      $("#findings-count").textContent = "";
+      box.innerHTML = `<div class="empty"><b>尚无检查结果</b>点「重新检查」运行 39 项部署审计。</div>`;
+      return;
+    }
+
+    const q = S.auditQuery.trim().toLowerCase();
+    const all = r.findings;
+    const shown = all.filter((f) => {
+      const matchStatus = S.auditFilter === "all" ? true
+        : S.auditFilter === "pass" ? f.status === "pass" : f.status !== "pass";
+      if (!matchStatus) return false;
+      if (!q) return true;
+      return [f.id, f.title, f.category, f.evidence, f.recommendation]
+        .join(" ").toLowerCase().includes(q);
+    });
+    $("#findings-count").textContent = `${shown.length}/${all.length} 项`;
+
+    if (!shown.length) {
+      box.innerHTML = `<div class="empty"><b>当前筛选下没有问题</b>换个筛选或清空搜索词。</div>`;
+      return;
+    }
+
+    box.innerHTML = shown.map((f) => `
+      <div class="finding ${f.status === "pass" ? "ok" : f.status === "warn" ? "warn" : "fail"}">
+        <span class="ic">${f.status === "pass" ? "✔" : f.status === "warn" ? "!" : "✘"}</span>
+        <span>
+          <span class="ttl">${esc(f.title)}</span>
+          <span class="meta">${esc(f.id)} · ${esc(f.category)} · ${esc(f.severity)}</span>
+          <span class="ev">${esc(f.evidence)}</span>
+          ${f.status !== "pass" && f.recommendation
+            ? `<span class="rec">→ ${esc(f.recommendation)}</span>` : ""}
+          ${f.fix ? `<span class="fixrow">
+            <button class="btn sm" data-act="apply-fix" data-id="${esc(f.id)}">${esc(f.fix.label)}</button>
+            ${f.fix.note ? `<span class="tiny">${esc(f.fix.note)}</span>` : ""}</span>` : ""}
+        </span>
+        <span class="pill ${f.status === "pass" ? "ok" : f.status === "warn" ? "warn" : "bad"}">
+          ${f.status === "pass" ? "通过" : f.status === "warn" ? "警告" : "失败"}</span>
+      </div>`).join("");
+  }
+
+  async function doAudit(deep) {
+    await run(deep ? "深度检查" : "部署审计", async () => {
+      const r = await api("/api/audit", { deep });
+      S.report = r;
+      paintReport();
+      await refresh({ silent: true });
+      return `评分 ${r.score}/100（${r.grade}）· 通过 ${r.summary.pass} / 警告 ${r.summary.warn} / 失败 ${r.summary.fail}`;
+    });
+  }
+
+  async function loadWorkflows() {
+    await run("校验工作流", async () => {
+      const d = await api("/api/workflows");
+      S.workflows = d;
+      const items = d.items || [];
+      const bad = items.filter((w) => !w.ok);
+      const pill = $("#wf-pill");
+      pill.className = "pill " + (bad.length ? "bad" : "ok");
+      pill.textContent = bad.length ? `${bad.length} 个失败` : "全部通过";
+      $("#wf-list").innerHTML = `
+        <div class="tiny faint" style="margin-bottom:6px">
+          ${d.online ? "已对照本机 /object_info 校验（节点类型与输入名）" : "ComfyUI 离线，仅做结构与占位符校验"}
+        </div>
+        <table>
+          <thead><tr><th>模板</th><th>阶段</th><th>节点</th><th>结果</th><th>说明</th></tr></thead>
+          <tbody>${items.map((w) => `
+            <tr>
+              <td>${esc(w.name)}<div class="tiny faint">${esc(w.title || "")}</div></td>
+              <td>${w.stage ?? "—"}</td>
+              <td>${w.nodes ?? "—"}</td>
+              <td><span class="pill ${w.ok ? "ok" : "bad"}">${w.ok ? "通过" : "失败"}</span></td>
+              <td class="tiny">${(w.problems || []).map(esc).join("<br>")
+                || ((w.requires_packs || []).length
+                  ? "依赖：" + esc((w.requires_packs || []).join(", ")) : "—")}</td>
+            </tr>`).join("")}</tbody>
+        </table>`;
+      return bad.length ? bad.flatMap((w) => w.problems || []).join("\n") : "全部模板通过";
+    });
+  }
+
+  async function loadLogs() {
+    await run("读取日志", async () => {
+      const d = await api("/api/logs?tail=600");
+      S.logs = d.lines || [];
+      const pill = $("#log-pill");
+      pill.className = "pill mute";
+      pill.textContent = `${S.logs.length} 行 · ${d.size_kb ?? 0} KB`;
+      paintLogs();
+      const body = $("#log-body");
+      body.scrollTop = body.scrollHeight;
+      $("#sec-log").open = true;
+      return "";
+    });
+  }
+
+  function paintLogs() {
+    const body = $("#log-body");
+    const q = ($("#log-search").value || "").trim().toLowerCase();
+    let lines = S.logs;
+    if (S.logMode === "warn") {
+      lines = lines.filter((l) => /(\bWARN|WARNING|\bERROR|失败|异常|Traceback)/i.test(l));
+    }
+    if (q) lines = lines.filter((l) => l.toLowerCase().includes(q));
+    body.textContent = lines.length ? lines.join("\n") : (S.logs.length ? "（没有匹配行）" : "（空）");
+  }
+
+  /* ------------------------------------------------------------- actions */
+  const ACTION_LABEL = {
+    "comfy-start": "启动 ComfyUI",
+    "comfy-stop": "停止 ComfyUI",
+    "check-env": "环境检查",
+    "init-project": "初始化目录",
+    "smoke": "出图验收",
+    "verify-workflow": "校验工作流",
+    "open-output": "打开输出目录",
+    free_vram: "释放全部显存",
+    dedupe_comfy: "清理重复实例",
+  };
+
+  async function backendAction(action, params = {}) {
+    const label = ACTION_LABEL[action] || action;
+    await run(label, async () => {
+      const r = await api("/api/action", { action, params });
+      await refresh({ silent: true });
+      return r.message || "完成";
+    });
+  }
+
+  async function copyText(text, label) {
+    const value = String(text || "");
+    if (!value.trim()) { toast("没有可复制的内容", "bad"); return; }
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch (_) {
+      const area = document.createElement("textarea");
+      area.value = value;
+      area.setAttribute("readonly", "true");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand("copy"); } catch (_e) { /* ignore */ }
+      area.remove();
+    }
+    toast(label + "已复制", "ok");
+  }
+
+  const missingModels = () => Object.entries((S.state && S.state.models) || {})
+    .filter(([, present]) => !present).map(([name]) => name);
+
+  const HANDLERS = {
+    refresh: () => refresh({ silent: false }),
+    theme: () => applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light"),
+
+    "comfy-start": () => backendAction("comfyui_start"),
+    "comfy-stop": () => backendAction("comfyui_stop"),
+    "check-env": () => backendAction("check_env"),
+    "init-project": () => backendAction("init_project"),
+    smoke: () => backendAction("test_smoke"),
+    "open-output": () => backendAction("open_folder", { which: "output" }),
+    "models-refresh": () => loadModels(true),
+    "free-vram": () => backendAction("free_vram").then(() => loadModels(true)),
+    "comfy-start-model": () => backendAction("comfyui_start").then(() => loadModels(true)),
+    "comfy-stop-model": () => backendAction("comfyui_stop").then(() => loadModels(true)),
+    "model-load": (el) => modelAction("load", el.dataset.name),
+    "model-unload": (el) => modelAction("unload", el.dataset.name),
+    "unload-all-models": () => {
+      if (!window.confirm("卸载当前所有常驻模型？正在用的对话/任务会失去显存驻留。")) return;
+      run("卸载全部模型", async () => {
+        const r = await api("/api/models/unload_all", {});
+        await loadModels(true);
+        return r.message || "完成";
+      });
+    },
+    "apply-fix": (el) => applyFix(el.dataset.id),
+    "open-project": () => backendAction("open_folder", { which: "project" }),
+    "gen-stop": () => run("中断任务", async () => {
+      await api("/api/action", { action: "comfyui_interrupt", params: {} });
+      stopPolling();
+      setGenBusy(false);
+      return "已请求 ComfyUI 中断当前任务";
+    }),
+
+    generate: () => generate(),
+    reseed: () => { $("#opt-seed").value = -1; toast("下次生成使用随机种子", "ok"); },
+    preset: (el) => {
+      $("#opt-width").value = el.dataset.w;
+      $("#opt-height").value = el.dataset.h;
+      paintPresetState();
+      paintEstimate();
+    },
+
+    render: () => renderPrompt(),
+    resync: () => { S.promptDirty = false; renderPrompt(); },
+    "fill-bible": () => fillFromBible(),
+    "copy-pos": () => copyText($("#pos").value, "正向提示词"),
+    "copy-neg": () => copyText($("#neg").value, "负向提示词"),
+    "copy-hint": () => copyText((S.state && S.state.comfyui && S.state.comfyui.hint) || "", "安装命令"),
+    "copy-missing": () => copyText(missingModels().join("\n"), "权重清单"),
+
+    "save-illust": (el) => saveIllust(Number(el.dataset.idx)),
+    "reuse-seed": () => reuseSeed(),
+
+    "goto-studio": () => switchTab("studio"),
+    "goto-gallery": () => switchTab("gallery"),
+    "goto-health": () => switchTab("health"),
+    "goto-stage": (el) => {
+      S.openStage = Number(el.dataset.stage);
+      S.railSig = "";
+      paintRail();
+      $("#stage-detail").scrollIntoView({ block: "nearest", behavior: "smooth" });
+    },
+    stage: (el) => {
+      const stage = Number(el.dataset.stage);
+      S.openStage = S.openStage === stage ? null : stage;
+      S.railSig = "";
+      paintRail();
+    },
+
+    audit: () => doAudit(false),
+    "audit-deep": () => doAudit(true),
+    "audit-filter": (el) => {
+      S.auditFilter = el.dataset.filter;
+      paintFindings();
+    },
+    "open-report": () => window.open("/report.md", "_blank"),
+    "verify-workflow": () => loadWorkflows(),
+    "load-log": () => loadLogs(),
+    "log-mode": (el) => {
+      S.logMode = el.dataset.mode;
+      $$("#sec-log [data-act='log-mode']").forEach((b) =>
+        b.setAttribute("aria-pressed", String(b.dataset.mode === S.logMode)));
+      paintLogs();
+    },
+
+    "gallery-refresh": () => loadGallery(true),
+    "gallery-filter": (el) => {
+      S.galleryFilter = el.dataset.filter;
+      paintGallery();
+    },
+    "tile-save": (el) => tileSave(Number(el.dataset.idx)),
+    "tile-download": (el) => downloadGallery(Number(el.dataset.idx)),
+    "tile-reveal": (el) => revealGallery(Number(el.dataset.idx)),
+    "save-bible": () => saveBible(),
+    "reload-bible": () => loadBible(true),
+    "clear-job": () => forgetJob(),
+    "goto-queue": () => {
+      switchTab("studio");
+      const panel = $("#gen-panel");
+      if (panel) panel.scrollIntoView({ block: "center", behavior: "smooth" });
+    },
+    "lightbox-download": () => downloadCurrent(),
+    "lightbox-reveal": () => revealCurrent(),
+
+    "lightbox-gallery": (el) => openLightbox(galleryLightboxList(), Number(el.dataset.idx)),
+    "lightbox-gen": (el) => openLightbox(genLightboxList(), Number(el.dataset.idx)),
+    "lightbox-close": () => closeLightbox(),
+    "lightbox-prev": () => navLightbox(-1),
+    "lightbox-next": () => navLightbox(1),
+
+    "task-toggle": () => {
+      const out = $("#task-out");
+      out.hidden = !out.hidden;
+      $('[data-act="task-toggle"]').textContent = out.hidden ? "详情" : "收起";
+    },
+    "task-close": () => task.close(),
+
+    /* ---- 库 ---- */
+    "pick-type": (el) => pickType(el.dataset.type),
+    "hist-refresh": () => loadLibrary(true),
+    "hist-clear": () => {
+      if (!window.confirm("清空全部出图历史？（只删记录，不删图片）")) return;
+      run("清空历史", async () => {
+        const r = await api("/api/history/delete", { clear: true });
+        S.library.items = [];
+        await loadLibrary(true);
+        return `已清空 ${r.removed || 0} 条`;
+      });
+    },
+    "hist-reuse": (el) => applyHistory(el.dataset.id),
+    "hist-copy": (el) => {
+      const item = histFind(el.dataset.id);
+      copyText(item ? item.positive : "", "正向提示词");
+    },
+    "hist-del": (el) => {
+      const id = el.dataset.id;
+      run("删除记录", async () => {
+        await api("/api/history/delete", { id });
+        S.library.items = (S.library.items || []).filter((it) => String(it.id) !== String(id));
+        paintHistory();
+        return "已删除";
+      });
+    },
+    "lora-rescan": () => loadLibrary(true),
+    "lora-filter": (el) => {
+      S.library.family = el.dataset.family || "all";
+      paintLoraFilters();
+      paintLoras();
+    },
+    "add-tag": (el) => addTag(el.dataset.tag),
+    "llm-tags": () => llmAssist("tags"),
+    "llm-polish": () => llmAssist("polish"),
+    "goto-library": () => switchTab("library"),
+
+    /* ---- 角色卡 / LoRA 叠加 ---- */
+    "bible-insert": () => applyBible("insert"),
+    "bible-replace": () => applyBible("replace"),
+    "bible-shoot": async () => {
+      if (!applyBible("replace")) return;
+      pickType("illust");
+      await new Promise((r) => setTimeout(r, 80));
+      const panel = $("#gen-panel");
+      if (panel) panel.scrollIntoView({ block: "center", behavior: "smooth" });
+      generate();
+    },
+    "lora-add": () => loraAdd(),
+    "lora-clear": () => {
+      S.loraStack = [];
+      saveLoraStack();
+      paintLoraStack();
+      toast("已清空，回到工作流默认 LoRA", "ok");
+    },
+    "lora-up": (el) => {
+      const i = Number(el.dataset.idx);
+      if (i <= 0) return;
+      [S.loraStack[i - 1], S.loraStack[i]] = [S.loraStack[i], S.loraStack[i - 1]];
+      saveLoraStack();
+      paintLoraStack();
+    },
+    "lora-down": (el) => {
+      const i = Number(el.dataset.idx);
+      if (i >= S.loraStack.length - 1) return;
+      [S.loraStack[i + 1], S.loraStack[i]] = [S.loraStack[i], S.loraStack[i + 1]];
+      saveLoraStack();
+      paintLoraStack();
+    },
+    "lora-remove": (el) => {
+      S.loraStack.splice(Number(el.dataset.idx), 1);
+      saveLoraStack();
+      paintLoraStack();
+    },
+    "lora-alias": async (el) => {
+      const name = el.dataset.name;
+      const row = (S.library.loras || []).find((l) => l.name === name) || {};
+      const alias = window.prompt(`给 ${name} 起个中文名（留空＝恢复英文名）`, row.alias || "");
+      if (alias === null) return;
+      try {
+        await api("/api/lora/alias", { name, alias });
+        await loadLibrary(true);
+        paintLoraStack();
+        toast(alias ? `已命名为「${alias}」` : "已恢复原名", "ok");
+      } catch (err) {
+        toast(`改名失败：${err.message}`, "bad");
+      }
+    },
+    "lora-del": async (el) => {
+      const name = el.dataset.name;
+      if (!window.confirm(`把 ${name} 移出 LoRA 目录？（进 project/_trash/loras，可还原）`)) return;
+      try {
+        await api("/api/lora/delete", { name });
+        S.loraStack = S.loraStack.filter((row) => row.name !== name);
+        saveLoraStack();
+        await loadLibrary(true);
+        paintLoraStack();
+        toast("已移到回收站", "ok");
+      } catch (err) {
+        toast(`删除失败：${err.message}`, "bad");
+      }
+    },
+    "tpl-scope": () => {
+      const tpl = templateMap();
+      S.tplGroup = S.tplGroup === "all"
+        ? ((tpl[S.tplKey] || {}).group || "illust")
+        : "all";
+      paintTemplateSelect();
+    },
+    "card-load": () => cardLoad(),
+    "card-save": () => cardSaveCurrent(),
+    "card-del": () => cardDelete(),
+    "card-rename": () => cardRename(),
+    "card-update": () => cardUpdate(),
+    "card-new": () => cardNew(),
+    "card-rebuild": () => cardRebuild(),
+    "pm-add": () => wordAdd(),
+    "pm-use": (el) => wordUse(el.dataset.idx),
+    "fw-add": (el) => fieldWordAdd(el.dataset.key),
+    "fw-open": (el) => fieldWordOpen(el.dataset.key),
+    "fw-menu": (el) => fieldMenuToggle(el.dataset.key),
+    "fw-pick": (el) => fieldMenuPick(el.dataset.key, el.dataset.en),
+    "pm-del": (el) => wordDelete(el.dataset.idx),
+    "pm-edit": (el) => wordStartEdit(el.dataset.idx),
+    "pm-ok": (el) => {
+      const input = document.querySelector(`[data-pm-input="${el.dataset.idx}"]`);
+      wordCommitEdit(el.dataset.idx, input ? input.value : "");
+    },
+    "pm-cancel": () => { S.pmEdit = null; paintWordList(); },
+    "pm-reset": () => wordReset(),
+    "fe-add": () => fieldAdd(),
+    "fe-rename": (el) => fieldRename(el.dataset.key),
+    "fe-del": (el) => fieldDelete(el.dataset.key),
+    "hist-card": (el) => histSaveCard(el.dataset.id),
+  };
+
+  document.addEventListener("click", (ev) => {
+    if (!ev.target.closest(".combo")) closeFieldMenus();
+    const actEl = ev.target.closest("[data-act]");
+    if (actEl) {
+      const fn = HANDLERS[actEl.dataset.act];
+      if (fn) { ev.preventDefault(); fn(actEl, ev); }
+      return;
+    }
+    const tabBtn = ev.target.closest("[data-tab]");
+    if (tabBtn) { switchTab(tabBtn.dataset.tab); return; }
+    if (ev.target.id === "lightbox") closeLightbox();
+  });
+
+  /* ================================================================ 库 */
+  // 创作类型：一种类型 = 一个模板 + 自带画幅/工作流，点一下就位。
+  const TYPES = [
+    { key: "illust", label: "插画 · 窗边", tpl: "stage3_illustration" },
+    { key: "illust_dusk", label: "插画 · 黄昏", tpl: "stage3_illustration_beach" },
+    { key: "illust_night", label: "插画 · 夜景", tpl: "stage3_illustration_night" },
+    { key: "illust_sdxl", label: "插画 · SDXL", tpl: "stage3_illustrious" },
+    { key: "swim", label: "白色泳装", tpl: "stage3_swim_w1_highneck" },
+    { key: "azusa", label: "白洲梓", tpl: "stage3_azusa_uniform" },
+    { key: "char", label: "角色设定", tpl: "stage1_master" },
+    { key: "panel", label: "漫画分格", tpl: "stage4_panel" },
+    { key: "loratest", label: "LoRA 测试", tpl: "stage2_grid" },
+  ];
+
+  function paintTypeChips() {
+    const host = $("#type-chips");
+    if (!host) return;
+    const tpl = templateMap();
+    host.innerHTML = TYPES.filter((t) => tpl[t.tpl]).map((t) => `
+      <button class="chipbtn" data-act="pick-type" data-type="${esc(t.key)}"
+              aria-pressed="${String(t.tpl === S.tplKey)}">${esc(t.label)}</button>`).join("");
+  }
+
+  function pickType(key) {
+    const t = TYPES.find((x) => x.key === key);
+    if (!t || !templateMap()[t.tpl]) { toast("这个类型还没配模板", "warn"); return; }
+    if (S.tplKey !== t.tpl) {
+      S.tplValues[S.tplKey] = readFields();
+      S.tplKey = t.tpl;
+      S.tplGroup = "";
+      paintTemplateSelect();
+      syncOptionsFromTemplate();
+    }
+    paintTypeChips();
+    switchTab("studio");
+  }
+
+  async function loadLibrary(force = false) {
+    const list = $("#hist-list");
+    if (list && !S.library.items.length) list.innerHTML = `<div class="empty">正在读取…</div>`;
+    try {
+      const [lib, hist] = await Promise.all([
+        api("/api/library" + (force ? "?force=1" : "")),
+        api("/api/history?limit=80"),
+      ]);
+      S.library.loras = lib.loras || [];
+      S.library.families = lib.families || {};
+      S.library.items = hist.items || [];
+    } catch (err) {
+      if (list) list.innerHTML = `<div class="empty">读取失败：${esc(err.message)}</div>`;
+      return;
+    }
+    paintHistory();
+    paintLoras();
+    paintLoraFilters();
+  }
+
+  function histThumb(item) {
+    const out = (item.outputs || [])[0];
+    if (out && out.filename) {
+      return `<div class="hist-thumb"><img loading="lazy" alt="" src="${esc(comfyImageUrl(out))}"></div>`;
+    }
+    return `<div class="hist-thumb empty">无图</div>`;
+  }
+
+  function histLoraTags(item) {
+    return (item.loras || []).map((l) => {
+      const name = String(l.name || "").replace(/\.safetensors$/i, "");
+      const s = l.strength === null || l.strength === undefined ? "" : ` ${Number(l.strength).toFixed(2)}`;
+      return `<span class="tagchip" style="cursor:default" title="${esc(l.name || "")}">${esc(name + s)}</span>`;
+    }).join("");
+  }
+
+  function paintHistory() {
+    const host = $("#hist-list");
+    if (!host) return;
+    const q = ($("#hist-search") && $("#hist-search").value || "").trim().toLowerCase();
+    const items = S.library.items.filter((it) => {
+      if (!q) return true;
+      const hay = [it.template, it.workflow, it.positive, it.negative,
+        (it.loras || []).map((l) => l.name).join(" ")].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+    $("#hist-count").textContent = items.length ? `${items.length}` : "";
+    if (!items.length) {
+      host.innerHTML = `<div class="empty">${q ? "没有匹配的记录" : "还没有出图记录，生成一张就会出现在这里"}</div>`;
+      return;
+    }
+    host.innerHTML = items.map((it) => {
+      const o = it.options || {};
+      const when = it.ts ? new Date(it.ts * 1000).toLocaleString() : "";
+      const size = o.width && o.height ? `${o.width}×${o.height}` : "";
+      const seed = o.seed !== undefined && o.seed !== null ? `种子 ${o.seed}` : "";
+      return `<div class="hist-row" data-id="${esc(it.id || "")}">
+        ${histThumb(it)}
+        <div class="hist-main">
+          <div class="hist-title"><b>${esc(it.template || "未命名")}</b>
+            ${it.workflow ? `<span class="pill mute">${esc(it.workflow)}</span>` : ""}</div>
+          <div class="hist-pos">${esc((it.positive || "").slice(0, 220))}</div>
+          <div class="hist-meta"><span>${esc(when)}</span>${size ? `<span>· ${size}</span>` : ""}
+            ${seed ? `<span>· ${seed}</span>` : ""}</div>
+          <div class="hist-meta">${histLoraTags(it)}</div>
+          <div class="hist-ops">
+            <button class="btn sm" data-act="hist-reuse" data-id="${esc(it.id || "")}">回填到创作</button>
+            <button class="btn ghost sm" data-act="hist-card" data-id="${esc(it.id || "")}">存为角色卡</button>
+            <button class="btn ghost sm" data-act="hist-copy" data-id="${esc(it.id || "")}">复制正向</button>
+            <button class="btn ghost sm" data-act="hist-del" data-id="${esc(it.id || "")}">删除</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function histFind(id) {
+    return (S.library.items || []).find((it) => String(it.id) === String(id)) || null;
+  }
+
+  function applyHistory(id) {
+    const item = histFind(id);
+    if (!item) return;
+    if (item.template && templateMap()[item.template]) {
+      S.tplKey = item.template;
+      $("#tpl").value = item.template;
+      paintTemplateForm();
+    }
+    S.workflowOverride = item.workflow || "";
+    $("#pos").value = item.positive || "";
+    $("#neg").value = item.negative || "";
+    S.promptDirty = true;
+    paintSyncState();
+    const o = item.options || {};
+    if (o.width) $("#opt-width").value = o.width;
+    if (o.height) $("#opt-height").value = o.height;
+    if (o.steps) $("#opt-steps").value = o.steps;
+    if (o.cfg) $("#opt-cfg").value = o.cfg;
+    if (o.seed !== undefined && o.seed !== null) $("#opt-seed").value = o.seed;
+    paintPresetState();
+    paintEstimate();
+    paintTypeChips();
+    switchTab("studio");
+    toast("已回填模板、提示词与参数", "ok");
+  }
+
+  function paintLoraFilters() {
+    const host = $("#lora-filters");
+    if (!host) return;
+    const fams = Object.keys(S.library.families || {}).sort();
+    host.innerHTML = [["all", "全部"], ...fams.map((f) => [f, f])].map(([key, label]) => `
+      <button class="chipbtn" data-act="lora-filter" data-family="${esc(key)}"
+              aria-pressed="${String((S.library.family || "all") === key)}">${esc(label)}</button>`).join("");
+  }
+
+  function paintLoras() {
+    const host = $("#lora-list");
+    if (!host) return;
+    const fam = S.library.family || "all";
+    const items = (S.library.loras || []).filter((l) => fam === "all" || l.family === fam);
+    $("#lora-count").textContent = `${items.length}`;
+    if (!items.length) { host.innerHTML = `<div class="empty">没有 LoRA</div>`; return; }
+    host.innerHTML = items.map((l) => {
+      const anima = l.family === "anima";
+      const badge = anima
+        ? `<span class="pill ok" title="与当前 anima 工作流同底模，可直接叠加">可直接用</span>`
+        : `<span class="pill warn" title="底模不是 anima，需要换对应家族的 checkpoint / 工作流">需 ${esc(l.family)} 工作流</span>`;
+      return `
+      <div class="lora-row">
+        <span class="lora-fam">${esc(l.family || "?")}</span>
+        <div class="lora-body">
+          <div class="lora-name">${esc(l.label || l.name)} ${badge}</div>
+          <div class="hist-meta"><span class="mono">${esc(l.name)}</span>
+            <span>· ${l.size_mb} MB</span><span>· ${l.tensors} tensors</span></div>
+          <div class="lora-tags">${(l.triggers || []).map((t) =>
+            `<span class="tagchip" data-act="add-tag" data-tag="${esc(t)}">${esc(t)}</span>`).join("")
+            || `<span class="tiny faint">无触发词</span>`}</div>
+          <div class="hist-ops">
+            <button class="btn ghost mini" data-act="lora-alias" data-name="${esc(l.name)}">中文名</button>
+            <button class="btn ghost mini" data-act="lora-del" data-name="${esc(l.name)}">删除</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function addTag(tag) {
+    const value = String(tag || "").trim();
+    if (!value) { toast("这个 LoRA 没有触发词", "warn"); return; }
+    const pos = $("#pos");
+    const current = pos.value.trim();
+    pos.value = current ? `${current.replace(/\s*,\s*$/, "")}, ${value}` : value;
+    S.promptDirty = true;
+    paintSyncState();
+    toast(`已插入 ${value}`, "ok");
+  }
+
+  async function llmAssist(mode) {
+    const brief = ($("#llm-brief").value || "").trim();
+    const pos = $("#pos").value.trim();
+    if (mode === "tags" && !brief) { toast("先写一句想法，再交给本地模型扩写", "warn"); $("#llm-brief").focus(); return; }
+    if (mode === "polish" && !pos) { toast("正向提示词还是空的", "warn"); return; }
+    const body = mode === "tags"
+      ? { task: "tags", brief, context: "" }
+      : { task: "rewrite", brief: brief || pos, context: pos, negative: $("#neg").value.trim() };
+    const state = $("#llm-state");
+    state.textContent = "本地模型思考中…";
+    try {
+      const r = await api("/api/llm", body);
+      const text = (r.text || "").trim();
+      if (!text) throw new Error("本地模型没给出内容");
+      $("#pos").value = mode === "tags" && pos ? `${pos.replace(/\s*,\s*$/, "")}, ${text}` : text;
+      S.promptDirty = true;
+      paintSyncState();
+      const secs = r.total_ms ? `${(r.total_ms / 1000).toFixed(1)}s` : "";
+      state.textContent = `${r.model || "本地模型"} · ${secs}`;
+      toast("本地模型已改好，可直接生成", "ok");
+    } catch (err) {
+      state.textContent = "";
+      toast(`本地模型失败：${err.message}`, "bad");
+    }
+  }
+
+  /* ================================================== LoRA 权重（手写链） */
+  const LORA_STACK_KEY = "studio.loraStack";
+
+  function loadLoraStack() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(LORA_STACK_KEY) || "[]");
+      S.loraStack = Array.isArray(raw)
+        ? raw.filter((x) => x && x.name)
+          .map((x) => ({ name: String(x.name), strength: Number(x.strength ?? 0.6) }))
+        : [];
+    } catch (_) {
+      S.loraStack = [];
+    }
+  }
+
+  function saveLoraStack() {
+    try { localStorage.setItem(LORA_STACK_KEY, JSON.stringify(S.loraStack)); } catch (_) { /* ignore */ }
+  }
+
+  function loraOptions(selected) {
+    const items = S.library.loras || [];
+    if (!items.length) return `<option value="">（先去「库」刷新 LoRA）</option>`;
+    const has = items.some((l) => l.name === selected);
+    const head = has || !selected ? "" : `<option value="${esc(selected)}" selected>${esc(selected)}（未装）</option>`;
+    return head + items.map((l) => `
+      <option value="${esc(l.name)}"${l.name === selected ? " selected" : ""}>${esc(l.label || l.name)}${l.family && l.family !== "anima" ? ` · ${esc(l.family)}` : ""}</option>`).join("");
+  }
+
+  function paintLoraStack() {
+    const host = $("#lora-stack");
+    if (!host) return;
+    const state = $("#lora-stack-state");
+    if (!S.loraStack.length) {
+      host.innerHTML = `<div class="empty">没有手动 LoRA：出图按工作流自带的那套走。</div>`;
+      if (state) state.textContent = "跟随工作流默认";
+      return;
+    }
+    host.innerHTML = S.loraStack.map((row, i) => `
+      <div class="lora-row-stack">
+        <span class="lora-idx">${i + 1}</span>
+        <select data-lora-name="${i}">${loraOptions(row.name)}</select>
+        <input type="number" min="-1" max="2" step="0.05" title="权重"
+               value="${Number(row.strength).toFixed(2)}" data-lora-weight="${i}">
+        <button class="btn ghost mini" data-act="lora-up" data-idx="${i}"
+                ${i === 0 ? "disabled" : ""} title="上移">↑</button>
+        <button class="btn ghost mini" data-act="lora-down" data-idx="${i}"
+                ${i === S.loraStack.length - 1 ? "disabled" : ""} title="下移">↓</button>
+        <button class="btn ghost mini" data-act="lora-remove" data-idx="${i}" title="删除">×</button>
+      </div>`).join("");
+    if (state) state.textContent = `${S.loraStack.length} 个 · 覆盖默认`;
+  }
+
+  function loraStackPayload() {
+    return S.loraStack
+      .filter((x) => x && x.name)
+      .map((x) => ({ name: x.name, strength: Number(x.strength) }));
+  }
+
+  function ensureLoras() {
+    paintLoraStack();
+    if (!(S.library.loras || []).length) {
+      loadLibrary().then(() => paintLoraStack()).catch(() => {});
+    }
+  }
+
+  function loraAdd() {
+    const items = S.library.loras || [];
+    const own = new Set(S.loraStack.map((x) => x.name));
+    const pick = items.find((l) => l.family === "anima" && !own.has(l.name))
+      || items.find((l) => !own.has(l.name)) || items[0];
+    if (!pick) { toast("LoRA 库还没读出来，切到「库」刷一下", "warn"); return; }
+    S.loraStack.push({ name: pick.name, strength: 0.6 });
+    saveLoraStack();
+    paintLoraStack();
+  }
+
+  document.addEventListener("error", (ev) => {
+    const img = ev.target;
+    if (img && img.tagName === "IMG") {
+      const host = img.closest(".tile, .shot");
+      if (host) host.classList.add("broken");
+    }
+  }, true);
+
+  /* ------------------------------------------------------------- inputs */
+  $("#tpl").addEventListener("change", (ev) => {
+    S.tplValues[S.tplKey] = readFields();
+    S.tplKey = ev.target.value;
+    S.workflowOverride = "";
+    paintTemplateForm();
+    syncOptionsFromTemplate();
+    paintTypeChips();
+  });
+
+  $("#hist-search").addEventListener("input", paintHistory);
+
+  $("#card-select").addEventListener("change", (ev) => {
+    S.cardId = ev.target.value;
+    paintCardSelect();
+    paintCardEdit();
+  });
+
+  $("#zh-display").addEventListener("change", (ev) => {
+    S.bibleDraft = bibleDraft();          // 先把英文草稿留住，切换不丢
+    S.zhDisplay = Boolean(ev.target.checked);
+    try { localStorage.setItem("studio.zhDisplay", S.zhDisplay ? "1" : "0"); } catch (_) { /* ignore */ }
+    paintBible();
+    toast(S.zhDisplay ? "栏目改成中文显示，提示词仍写英文" : "栏目改成英文显示", "ok");
+  });
+
+  $("#pm-field").addEventListener("change", () => { S.pmEdit = null; paintWordList(); });
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") closeFieldMenus();
+  });
+
+  ["fe-label", "fe-key"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") { ev.preventDefault(); fieldAdd(); }
+    });
+  });
+
+  $("#pm-list").addEventListener("keydown", (ev) => {
+    const input = ev.target.closest("[data-pm-input]");
+    if (!input) return;
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      wordCommitEdit(input.dataset.pmInput, input.value);
+    } else if (ev.key === "Escape") {
+      ev.preventDefault();
+      S.pmEdit = null;
+      paintWordList();
+    }
+  });
+
+  $("#pm-new").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); wordAdd(); }
+  });
+
+  $("#llm-brief").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); llmAssist("tags"); }
+  });
+
+  // LoRA 链：下拉改名字 / 数字改权重，都直接落到本地状态里。
+  document.addEventListener("change", (ev) => {
+    const sel = ev.target.closest("[data-lora-name]");
+    if (sel) {
+      S.loraStack[Number(sel.dataset.loraName)].name = sel.value;
+      saveLoraStack();
+      paintLoraStack();
+    }
+  });
+
+  document.addEventListener("input", (ev) => {
+    const search = ev.target.closest("[data-cm-search]");
+    if (search) {
+      const key = search.dataset.cmSearch;
+      const box = document.getElementById(`cm-${key}`);
+      if (box) {
+        box.dataset.query = search.value;
+        paintFieldMenu(key);
+      }
+      return;
+    }
+    const weight = ev.target.closest("[data-lora-weight]");
+    if (weight) {
+      const row = S.loraStack[Number(weight.dataset.loraWeight)];
+      if (!row) return;
+      const value = Number(weight.value);
+      row.strength = Number.isFinite(value) ? Math.max(-1, Math.min(2, value)) : 0.6;
+      saveLoraStack();
+    }
+  });
+
+  $("#bible-fields").addEventListener("input", (ev) => {
+    if (ev.target.matches("[data-bible]")) paintBiblePreview();
+  });
+  $("#bible-fields").addEventListener("change", (ev) => {
+    if (ev.target.matches("[data-bible]")) paintBiblePreview();
+  });
+
+  ["opt-width", "opt-height"].forEach((id) =>
+    $("#" + id).addEventListener("change", paintPresetState));
+
+  ["opt-width", "opt-height", "opt-steps", "opt-cfg", "opt-batch"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", paintEstimate);
+    el.addEventListener("change", paintEstimate);
+  });
+
+  // Prompt boxes: hand edits win over template auto-sync; dblclick resets size.
+  PROMPT_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", () => {
+      if (!S.promptDirty) { S.promptDirty = true; paintSyncState(); }
+      if (id === "pos") paintBiblePreview();
+    });
+    el.addEventListener("dblclick", () => resetPromptSize(id));
+  });
+
+  $("#tpl-fields").addEventListener("input", (ev) => {
+    if (ev.target.matches("[data-field]")) scheduleAutoRender();
+  });
+
+  // Any auto-growing field scrolls after its cap rather than clipping text.
+  document.addEventListener("input", (ev) => {
+    if (ev.target && ev.target.matches && ev.target.matches("textarea[data-grow]")) {
+      growField(ev.target);
+    }
+  });
+
+  $("#audit-search").addEventListener("input", (ev) => {
+    S.auditQuery = ev.target.value;
+    paintFindings();
+  });
+
+  $("#log-search").addEventListener("input", paintLogs);
+
+  /* ------------------------------------------------------------- keyboard */
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") {
+      if (S.lightbox) { closeLightbox(); return; }
+      return;
+    }
+    if (S.lightbox) {
+      if (ev.key === "ArrowRight") { navLightbox(1); ev.preventDefault(); }
+      if (ev.key === "ArrowLeft") { navLightbox(-1); ev.preventDefault(); }
+      return;
+    }
+    const tag = (ev.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (ev.key === "r" || ev.key === "R") { refresh({ silent: false }); return; }
+    const map = { "1": "home", "2": "studio", "3": "gallery", "4": "health" };
+    if (map[ev.key]) switchTab(map[ev.key]);
+  });
+
+  window.addEventListener("error", (ev) => showFatal(ev.message || "未知错误"));
+  window.addEventListener("unhandledrejection", (ev) => {
+    const reason = ev.reason;
+    showFatal(reason && reason.message ? reason.message : String(reason));
+  });
+
+  /* ------------------------------------------------------------- boot */
+  async function boot() {
+    applyTheme(document.documentElement.dataset.theme);
+    loadLoraStack();
+    try {
+      const savedZh = localStorage.getItem("studio.zhDisplay");
+      if (savedZh !== null) S.zhDisplay = savedZh === "1";
+    } catch (_) { /* ignore */ }
+    const zhBox = $("#zh-display");
+    if (zhBox) zhBox.checked = S.zhDisplay;
+
+    await refresh({ silent: true });
+    await loadPrompts();
+    await loadCards();
+    await loadPresets();
+    paintLoraStack();
+    watchPromptSizes();
+    await restoreLastJob();
+    fitPromptBoxes();
+    paintEstimate();
+
+    switchTab(location.hash.replace("#", "") || "home", { push: false });
+    window.addEventListener("hashchange", () =>
+      switchTab(location.hash.replace("#", ""), { push: false }));
+
+    S.timer = setInterval(() => {
+      if (document.hidden) return;
+      if ($("#task").dataset.busy === "1") return;
+      refresh({ silent: true });
+    }, 5000);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) refresh({ silent: true });
+    });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

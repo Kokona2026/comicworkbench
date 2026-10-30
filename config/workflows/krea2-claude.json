@@ -1,0 +1,78 @@
+{
+  "__meta__": {
+    "title": "Krea 2 Turbo + Claudechan 角色 LoRA（古典书 × Anthropic 花 × 黑发饰）",
+    "stage": 3,
+    "requires_packs": [],
+    "notes": "krea2_turbo_nvfp4 + qwen3vl_4b text encoder + claudechan_krea2 LoRA. Turbo: 6-10 steps, cfg 1.0, euler. Prompt is natural language, not danbooru tags.",
+    "defaults": {
+      "unet_name": "krea2_turbo_nvfp4.safetensors",
+      "clip_name": "qwen3vl_4b_fp8_scaled.safetensors",
+      "vae_name": "qwen_image_vae.safetensors",
+      "lora_name": "claudechan_krea2.safetensors",
+      "lora_strength": 1.0,
+      "width": 1024,
+      "height": 1536,
+      "batch_size": 1,
+      "seed": 424242,
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1.0,
+      "positive": "Claudechan",
+      "negative": "",
+      "filename_prefix": "anima/krea2-claude"
+    }
+  },
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": { "unet_name": "{{unet_name}}", "weight_dtype": "default" }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": { "clip_name": "{{clip_name}}", "type": "krea2", "device": "default" }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "{{vae_name}}" }
+  },
+  "4": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": { "lora_name": "{{lora_name}}", "strength_model": "{{lora_strength}}", "model": ["1", 0] }
+  },
+  "5": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": { "width": "{{width}}", "height": "{{height}}", "batch_size": "{{batch_size}}" }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{positive}}", "clip": ["2", 0] }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{negative}}", "clip": ["2", 0] }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": "{{seed}}",
+      "steps": "{{steps}}",
+      "cfg": "{{cfg}}",
+      "sampler_name": "{{sampler_name}}",
+      "scheduler": "{{scheduler}}",
+      "denoise": "{{denoise}}",
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["8", 0], "vae": ["3", 0] }
+  },
+  "10": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["9", 0], "filename_prefix": "{{filename_prefix}}" }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "__meta__": {
+    "title": "Anima Base v1 + 双风格 LoRA（鬼针草 × 白玉）混合插画",
+    "stage": 3,
+    "requires_packs": [],
+    "notes": "Two UNET-only style LoRAs chained on anima-base-v1.0. Trigger tags: @m8style (guizhencao), shiratama art (shiratama). Keep both strengths <=0.85 so neither style fully overwrites the other.",
+    "defaults": {
+      "unet_name": "anima-base-v1.0.safetensors",
+      "clip_name": "qwen_3_06b_base.safetensors",
+      "vae_name": "qwen_image_vae.safetensors",
+      "lora_a": "guizhencao_v1.safetensors",
+      "lora_a_strength": 0.72,
+      "lora_b": "shiratama_anima.safetensors",
+      "lora_b_strength": 0.68,
+      "width": 1024,
+      "height": 1536,
+      "batch_size": 1,
+      "seed": 830271,
+      "steps": 40,
+      "cfg": 4.5,
+      "sampler_name": "er_sde",
+      "scheduler": "normal",
+      "denoise": 1.0,
+      "positive": "masterpiece, best quality, @m8style, shiratama art, 1girl, solo, deep blue hair, very long wavy hair, voluminous hair, ahoge, blue eyes, watery eyes, heavy blush, fin earrings, blue bow, maid, maid headdress, navy maid dress, white frilled apron, huge breasts, nipples, cleavage, white thighhighs, thighhighs, thick thighs, wet clothes, pussy juice, cameltoe, whale tail, tail, navel, looking at viewer, open mouth, seductive smirk, indoors, warm light, depth of field",
+      "negative": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, watermark, signature, text, extra fingers, bad hands, bad anatomy, deformed, cropped head",
+      "filename_prefix": "anima/dualstyle"
+    }
+  },
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": { "unet_name": "{{unet_name}}", "weight_dtype": "default" }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": { "clip_name": "{{clip_name}}", "type": "qwen_image", "device": "default" }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "{{vae_name}}" }
+  },
+  "4": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": { "lora_name": "{{lora_a}}", "strength_model": "{{lora_a_strength}}", "model": ["1", 0] }
+  },
+  "5": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": { "lora_name": "{{lora_b}}", "strength_model": "{{lora_b_strength}}", "model": ["4", 0] }
+  },
+  "6": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": { "width": "{{width}}", "height": "{{height}}", "batch_size": "{{batch_size}}" }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{positive}}", "clip": ["2", 0] }
+  },
+  "8": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "{{negative}}", "clip": ["2", 0] }
+  },
+  "9": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": "{{seed}}",
+      "steps": "{{steps}}",
+      "cfg": "{{cfg}}",
+      "sampler_name": "{{sampler_name}}",
+      "scheduler": "{{scheduler}}",
+      "denoise": "{{denoise}}",
+      "model": ["5", 0],
+      "positive": ["7", 0],
+      "negative": ["8", 0],
+      "latent_image": ["6", 0]
+    }
+  },
+  "10": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["9", 0], "vae": ["3", 0] }
+  },
+  "11": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["10", 0], "filename_prefix": "{{filename_prefix}}" }
+  }
+}

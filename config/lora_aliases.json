@@ -1,0 +1,20 @@
+{
+  "guizhencao_v1.safetensors": "鬼针草 v1",
+  "shiratama_anima.safetensors": "白玉",
+  "shiratama_krea2.safetensors": "白玉（Krea2）",
+  "matarou_anima.safetensors": "魔太郎",
+  "tinkle_anima.safetensors": "てぃんくる",
+  "HSR_Style_Anima.safetensors": "星穹铁道 风格",
+  "HSR_Style_Lora_Illustrious.safetensors": "星穹铁道（IL）",
+  "Kafka_Illustrious.safetensors": "卡芙卡（IL）",
+  "kafkaHSR_anima.safetensors": "卡芙卡（Anima）",
+  "chatgpt_dragon_il.safetensors": "白龙（IL）",
+  "chatgpt_whitedragon_krea2.safetensors": "白龙（Krea2）",
+  "claudechan_krea2.safetensors": "Claude 酱（Krea2）",
+  "chenbin_style.safetensors": "陈斌 风格",
+  "chenbin_cao13.safetensors": "陈斌 草稿13",
+  "kantoku_anima.safetensors": "カントク 监督",
+  "azusa_anima_v1.safetensors": "白洲梓（Anima）",
+  "ShirasuAzusaBlueArchive_IXL_v1.safetensors": "白洲梓（Illustrious）",
+  "Shirasu Azusa(ba)-Illus.safetensors": "白洲梓（Illustrious 备用名）"
+}

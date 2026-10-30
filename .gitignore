@@ -1,0 +1,24 @@
+# ?????????
+project/**/*.png
+project/**/*.jpg
+project/**/*.jpeg
+project/**/*.webp
+project/_trash/
+
+# ????
+models/
+*.safetensors
+*.ckpt
+*.gguf
+
+# ??????
+.cache/
+logs/
+reports/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# ComfyUI ??
+ComfyUI/
